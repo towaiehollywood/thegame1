@@ -14,7 +14,7 @@
             --bg-dark: #000000;
             --asc-blue: #00d2ff;
             --desc-red: #ff4b2b;
-            --arrow-white: #ffffff; /* 矢印を見やすく白に設定 */
+            --arrow-color: #4a5d6e; /* イラストに近い色味 */
         }
         
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; font-family: sans-serif; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -27,28 +27,41 @@
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .screen.active { display: flex; }
 
-        #turn-splash { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3.5rem; font-weight: bold; color: #fff; text-shadow: 0 0 20px #2e7d32; z-index: 2500; pointer-events: none; opacity: 0; transition: opacity 0.5s; font-family: 'Potta One', cursive; }
+        /* あなたのターン表示：フォントを戻し、光を消す */
+        #turn-splash { 
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            font-size: 3rem; font-weight: bold; color: #fff; z-index: 2500; 
+            pointer-events: none; opacity: 0; transition: opacity 0.5s; 
+            font-family: sans-serif; /* 標準に戻す */
+        }
 
         #stamp-btn { position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-size: 1.8rem; color: #333; }
         #stamp-menu { position: fixed; bottom: 85px; right: 20px; background: rgba(255,255,255,0.95); padding: 12px; border-radius: 16px; display: none; grid-template-columns: repeat(2, 1fr); gap: 10px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        
+        /* スタンプのみ Potta One */
         .stamp-option { padding: 10px; color: #333; font-weight: bold; cursor: pointer; border: 1px solid #ddd; border-radius: 8px; background: #fff; text-align: center; font-family: 'Potta One', cursive; font-size: 0.8rem; white-space: nowrap; }
-
         .bubble { position: fixed; background: #fff; color: #333; padding: 12px 20px; border-radius: 20px; font-weight: bold; z-index: 1600; font-family: 'Potta One', cursive; box-shadow: 0 4px 12px rgba(0,0,0,0.3); animation: float-up 2s forwards; pointer-events: none; font-size: 1.1rem; white-space: nowrap; min-width: fit-content; }
         .bubble::after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); border-width: 10px 10px 0; border-style: solid; border-color: #fff transparent transparent; }
         @keyframes float-up { 0% { opacity: 0; transform: translate(-50%, 0); } 10% { opacity: 1; transform: translate(-50%, -20px); } 80% { opacity: 1; transform: translate(-50%, -40px); } 100% { opacity: 0; transform: translate(-50%, -60px); } }
 
-        /* 特徴的な矢印：白くはっきりさせる */
-        .arrow-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; }
-        .custom-arrow { width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; position: relative; }
-        .arrow-stem { width: 5px; height: 28px; background-color: var(--arrow-white); box-shadow: 0 0 8px rgba(255,255,255,0.5); }
+        /* 先端に向かって太くなる特殊な矢印 */
+        .arrow-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 40px; height: 100%; margin: 0 auto; }
+        
+        /* 矢印の三角形（先端を太く、根元を細く見せる） */
+        .custom-arrow-head { width: 0; height: 0; position: relative; }
+        
+        /* 昇順（上向き：上が太い） */
+        .asc-head { border-left: 15px solid transparent; border-right: 15px solid transparent; border-bottom: 25px solid var(--arrow-color); }
+        .asc-stem { width: 4px; height: 15px; background: var(--arrow-color); margin-top: -2px; }
 
-        .asc-arrow-head { border-bottom: 20px solid var(--arrow-white); margin-bottom: -2px; filter: drop-shadow(0 -2px 5px rgba(255,255,255,0.5)); }
-        .desc-arrow-head { border-top: 20px solid var(--arrow-white); margin-top: -2px; filter: drop-shadow(0 2px 5px rgba(255,255,255,0.5)); }
+        /* 降順（下向き：下が太い） */
+        .desc-stem { width: 4px; height: 15px; background: var(--arrow-color); margin-bottom: -2px; }
+        .desc-head { border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid var(--arrow-color); }
 
         #result-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        #result-screen h2 { font-size: 3.5rem; margin-bottom: 20px; text-shadow: 0 0 20px currentColor; font-family: 'Potta One', cursive; }
+        #result-screen h2 { font-size: 3.5rem; margin-bottom: 20px; text-shadow: 0 0 20px currentColor; font-family: sans-serif; }
         .perfect { color: #00ff00; } .win { color: #f1c40f; } .lose { color: #e74c3c; }
-        #clear-notice { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #f1c40f; text-shadow: 0 0 20px #000; z-index: 2500; pointer-events: none; opacity: 0; transition: opacity 0.5s; font-family: 'Potta One', cursive; }
+        #clear-notice { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #f1c40f; text-shadow: 0 0 20px #000; z-index: 2500; pointer-events: none; opacity: 0; transition: opacity 0.5s; font-family: sans-serif; }
 
         #user-info-area { position: absolute; top: 20px; left: 20px; font-size: 0.9rem; border-bottom: 1px solid #666; cursor: pointer; padding: 5px; z-index: 100; }
         .btn { background: #333; color: white; border: 1px solid white; padding: 12px 25px; margin: 10px; font-size: 1.1rem; width: 220px; cursor: pointer; border-radius: 4px; }
@@ -63,7 +76,7 @@
 
         #game-area { width: 100%; height: 100%; display: none; text-align: center; padding-top: 80px; }
         
-        /* 捨て場デザイン：枠の色と配置の修正 */
+        /* 捨て場デザイン：PC/スマホ共通で中央揃え */
         #piles-display { 
             display: none; background: var(--felt-green); padding: 25px; 
             border-radius: 40px; border: 3px solid #1a2a24; 
@@ -72,7 +85,7 @@
         }
         .piles-grid { 
             display: grid; 
-            grid-template-columns: 140px 40px 140px; /* PCでも中央に矢印が来るよう幅を固定 */
+            grid-template-columns: 1fr 40px 1fr; /* 中央のカラムを矢印用に固定 */
             grid-template-rows: 1fr 1fr; 
             gap: 15px; 
             align-items: center;
@@ -80,13 +93,12 @@
         }
 
         .pile { 
-            height: 75px; width: 130px; 
+            height: 75px; width: 100%; max-width: 140px; 
             border: 3px solid #1a2a24; border-radius: 15px; 
             display: flex; justify-content: center; align-items: center; 
             background: #ffffff; color: #333;
-            position: relative; transition: 0.3s; 
+            position: relative; transition: 0.3s; margin: 0 auto;
         }
-        /* 昇順・降順の色を戻す */
         .pile.asc { border-color: var(--asc-blue); box-shadow: 0 0 10px rgba(0, 210, 255, 0.3); }
         .pile.desc { border-color: var(--desc-red); box-shadow: 0 0 10px rgba(255, 75, 43, 0.3); }
         .pile-value { font-size: 2.2rem; font-weight: bold; }
@@ -160,15 +172,15 @@
         <div class="piles-grid">
             <div id="a1" class="pile asc" onclick="sendSignal('a1')"><div class="pile-value">1</div></div>
             <div class="arrow-container">
-                <div class="custom-arrow asc-arrow-head"></div>
-                <div class="arrow-stem"></div>
+                <div class="custom-arrow-head asc-head"></div>
+                <div class="asc-stem"></div>
             </div>
             <div id="a2" class="pile asc" onclick="sendSignal('a2')"><div class="pile-value">1</div></div>
 
             <div id="d1" class="pile desc" onclick="sendSignal('d1')"><div class="pile-value">100</div></div>
             <div class="arrow-container">
-                <div class="arrow-stem"></div>
-                <div class="custom-arrow desc-arrow-head"></div>
+                <div class="desc-stem"></div>
+                <div class="custom-arrow-head desc-head"></div>
             </div>
             <div id="d2" class="pile desc" onclick="sendSignal('d2')"><div class="pile-value">100</div></div>
         </div>
@@ -283,7 +295,7 @@
         if(myTurn) {
             const sp = document.getElementById('turn-splash');
             sp.style.opacity = '1';
-            setTimeout(() => sp.style.opacity = '0', 1000);
+            setTimeout(() => sp.style.opacity = '0', 2000); /* 表示時間を2秒に */
             checkGameStatus();
         }
     }
@@ -307,29 +319,17 @@
             document.body.appendChild(draggingData.clone);
             cardEl.style.opacity = '0.3';
         };
-
-        const updateClonePos = (x, y) => {
-            if (!draggingData.clone) return;
-            draggingData.clone.style.left = (x - 24) + 'px';
-            draggingData.clone.style.top = (y - 36) + 'px';
-        };
-
+        const updateClonePos = (x, y) => { if (!draggingData.clone) return; draggingData.clone.style.left = (x - 24) + 'px'; draggingData.clone.style.top = (y - 36) + 'px'; };
         const endDrag = (x, y) => {
             if (!draggingData.clone) return;
             const target = document.elementFromPoint(x, y);
             const pile = target ? target.closest('.pile') : null;
             if (pile) attemptPlaceCard(draggingData.cardValue, pile.id);
-            
             document.body.removeChild(draggingData.clone);
             draggingData.clone = null;
             cardEl.style.opacity = '1';
         };
-
-        cardEl.onmousedown = (e) => {
-            startDrag(e.clientX, e.clientY);
-            window.onmousemove = (me) => updateClonePos(me.clientX, me.clientY);
-            window.onmouseup = (ue) => { endDrag(ue.clientX, ue.clientY); window.onmousemove = null; window.onmouseup = null; };
-        };
+        cardEl.onmousedown = (e) => { startDrag(e.clientX, e.clientY); window.onmousemove = (me) => updateClonePos(me.clientX, me.clientY); window.onmouseup = (ue) => { endDrag(ue.clientX, ue.clientY); window.onmousemove = null; window.onmouseup = null; }; };
         cardEl.ontouchstart = (e) => { startDrag(e.touches[0].clientX, e.touches[0].clientY); };
         cardEl.ontouchmove = (e) => updateClonePos(e.touches[0].clientX, e.touches[0].clientY);
         cardEl.ontouchend = (e) => endDrag(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
@@ -396,27 +396,19 @@
     });
 
     function render() {
-        for(let k in state.piles) {
-            const el = document.querySelector(`#${k} .pile-value`);
-            if(el) el.innerText = state.piles[k];
-        }
+        for(let k in state.piles) { const el = document.querySelector(`#${k} .pile-value`); if(el) el.innerText = state.piles[k]; }
         document.getElementById('deck-count').innerText = state.deckCount;
         document.getElementById('played-count').innerText = state.played;
-        
         const rowTop = document.getElementById('hand-row-top');
         const rowBottom = document.getElementById('hand-row-bottom');
         rowTop.innerHTML = ''; rowBottom.innerHTML = '';
-
-        let topCount = 4;
-        if(state.hand.length === 6) topCount = 3;
-
+        let topCount = (state.hand.length === 6) ? 3 : 4;
         state.hand.forEach((v, i) => {
             const d = document.createElement('div');
             if(v === null) d.className = 'card-placeholder';
             else { d.className = 'card'; d.innerText = v; initDragEvents(d, v); }
             if(i < topCount) rowTop.appendChild(d); else rowBottom.appendChild(d);
         });
-
         const fb = document.getElementById('finish-btn'), min = state.deckCount > 0 ? 2 : 1;
         if(state.played >= min && myTurn) fb.classList.add('glow'); else fb.classList.remove('glow');
     }
