@@ -14,7 +14,6 @@
             --bg-dark: #000000;
             --asc-blue: #00d2ff;
             --desc-red: #ff4b2b;
-            --arrow-color: #4a5d6e; /* イラストに近い色味 */
         }
         
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; font-family: sans-serif; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -27,36 +26,27 @@
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .screen.active { display: flex; }
 
-        /* あなたのターン表示：フォントを戻し、光を消す */
+        /* ターン開始演出：背景を付けて目立たせる */
         #turn-splash { 
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            font-size: 3rem; font-weight: bold; color: #fff; z-index: 2500; 
+            position: fixed; top: 50%; left: 0; width: 100%; transform: translateY(-50%); 
+            background: rgba(0, 0, 0, 0.7); /* 黒い帯を追加 */
+            color: #fff; padding: 20px 0; text-align: center;
+            font-size: 3rem; font-weight: 900; z-index: 2500; 
             pointer-events: none; opacity: 0; transition: opacity 0.5s; 
-            font-family: sans-serif; /* 標準に戻す */
+            font-family: sans-serif;
         }
 
         #stamp-btn { position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-size: 1.8rem; color: #333; }
         #stamp-menu { position: fixed; bottom: 85px; right: 20px; background: rgba(255,255,255,0.95); padding: 12px; border-radius: 16px; display: none; grid-template-columns: repeat(2, 1fr); gap: 10px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        
-        /* スタンプのみ Potta One */
         .stamp-option { padding: 10px; color: #333; font-weight: bold; cursor: pointer; border: 1px solid #ddd; border-radius: 8px; background: #fff; text-align: center; font-family: 'Potta One', cursive; font-size: 0.8rem; white-space: nowrap; }
         .bubble { position: fixed; background: #fff; color: #333; padding: 12px 20px; border-radius: 20px; font-weight: bold; z-index: 1600; font-family: 'Potta One', cursive; box-shadow: 0 4px 12px rgba(0,0,0,0.3); animation: float-up 2s forwards; pointer-events: none; font-size: 1.1rem; white-space: nowrap; min-width: fit-content; }
         .bubble::after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); border-width: 10px 10px 0; border-style: solid; border-color: #fff transparent transparent; }
         @keyframes float-up { 0% { opacity: 0; transform: translate(-50%, 0); } 10% { opacity: 1; transform: translate(-50%, -20px); } 80% { opacity: 1; transform: translate(-50%, -40px); } 100% { opacity: 0; transform: translate(-50%, -60px); } }
 
-        /* 先端に向かって太くなる特殊な矢印 */
-        .arrow-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 40px; height: 100%; margin: 0 auto; }
-        
-        /* 矢印の三角形（先端を太く、根元を細く見せる） */
-        .custom-arrow-head { width: 0; height: 0; position: relative; }
-        
-        /* 昇順（上向き：上が太い） */
-        .asc-head { border-left: 15px solid transparent; border-right: 15px solid transparent; border-bottom: 25px solid var(--arrow-color); }
-        .asc-stem { width: 4px; height: 15px; background: var(--arrow-color); margin-top: -2px; }
-
-        /* 降順（下向き：下が太い） */
-        .desc-stem { width: 4px; height: 15px; background: var(--arrow-color); margin-bottom: -2px; }
-        .desc-head { border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid var(--arrow-color); }
+        /* シンプルで見やすい矢印 */
+        .arrow-plain { font-size: 2.5rem; font-weight: 900; line-height: 1; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        .asc-text { color: var(--asc-blue); }
+        .desc-text { color: var(--desc-red); }
 
         #result-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #result-screen h2 { font-size: 3.5rem; margin-bottom: 20px; text-shadow: 0 0 20px currentColor; font-family: sans-serif; }
@@ -64,9 +54,10 @@
         #clear-notice { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #f1c40f; text-shadow: 0 0 20px #000; z-index: 2500; pointer-events: none; opacity: 0; transition: opacity 0.5s; font-family: sans-serif; }
 
         #user-info-area { position: absolute; top: 20px; left: 20px; font-size: 0.9rem; border-bottom: 1px solid #666; cursor: pointer; padding: 5px; z-index: 100; }
-        .btn { background: #333; color: white; border: 1px solid white; padding: 12px 25px; margin: 10px; font-size: 1.1rem; width: 220px; cursor: pointer; border-radius: 4px; }
-        .btn-back { position: absolute; top: 20px; left: 20px; width: auto; padding: 8px 15px; font-size: 0.9rem; border: 1px solid white; background: #333; z-index: 100; }
-        input { background: #000; color: white; border: 1px solid white; padding: 10px; font-size: 1.2rem; width: 220px; text-align: center; margin-bottom: 15px; }
+        .btn { background: #333; color: white; border: 1px solid white; padding: 12px 25px; margin: 10px; font-size: 1.1rem; font-weight: 800; width: 220px; cursor: pointer; border-radius: 6px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); transition: all 0.2s; }
+        .btn:active { background: white; color: black; transform: scale(0.98); }
+        .btn-back { position: absolute; top: 20px; left: 20px; width: auto; padding: 8px 15px; font-size: 0.9rem; font-weight: bold; border: 1px solid white; background: #333; z-index: 100; border-radius: 4px; }
+        input { background: #000; color: white; border: 1px solid white; padding: 10px; font-size: 1.2rem; width: 220px; text-align: center; margin-bottom: 15px; font-weight: bold; }
 
         #turn-indicator { width: 100%; padding: 10px; font-weight: bold; position: fixed; top: 0; left: 0; z-index: 10; display: none; font-size: 0.9rem; box-shadow: 0 2px 10px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
         .my-turn { background: var(--my-turn-bg); } .others-turn { background: var(--others-turn-bg); }
@@ -75,30 +66,10 @@
         #game-info span { color: #2ed573; font-size: 1.3rem; margin: 0 5px; }
 
         #game-area { width: 100%; height: 100%; display: none; text-align: center; padding-top: 80px; }
-        
-        /* 捨て場デザイン：PC/スマホ共通で中央揃え */
-        #piles-display { 
-            display: none; background: var(--felt-green); padding: 25px; 
-            border-radius: 40px; border: 3px solid #1a2a24; 
-            box-shadow: inset 0 0 60px rgba(0,0,0,0.6), 0 8px 20px rgba(0,0,0,0.8); 
-            margin: 5px auto; width: 95%; max-width: 440px;
-        }
-        .piles-grid { 
-            display: grid; 
-            grid-template-columns: 1fr 40px 1fr; /* 中央のカラムを矢印用に固定 */
-            grid-template-rows: 1fr 1fr; 
-            gap: 15px; 
-            align-items: center;
-            justify-content: center;
-        }
+        #piles-display { display: none; background: var(--felt-green); padding: 25px; border-radius: 40px; border: 3px solid #1a2a24; box-shadow: inset 0 0 60px rgba(0,0,0,0.6), 0 8px 20px rgba(0,0,0,0.8); margin: 5px auto; width: 95%; max-width: 440px; }
+        .piles-grid { display: grid; grid-template-columns: 1fr 40px 1fr; grid-template-rows: 1fr 1fr; gap: 15px; align-items: center; justify-content: center; }
 
-        .pile { 
-            height: 75px; width: 100%; max-width: 140px; 
-            border: 3px solid #1a2a24; border-radius: 15px; 
-            display: flex; justify-content: center; align-items: center; 
-            background: #ffffff; color: #333;
-            position: relative; transition: 0.3s; margin: 0 auto;
-        }
+        .pile { height: 75px; width: 100%; max-width: 140px; border: 3px solid #1a2a24; border-radius: 15px; display: flex; justify-content: center; align-items: center; background: #ffffff; color: #333; position: relative; transition: 0.3s; margin: 0 auto; }
         .pile.asc { border-color: var(--asc-blue); box-shadow: 0 0 10px rgba(0, 210, 255, 0.3); }
         .pile.desc { border-color: var(--desc-red); box-shadow: 0 0 10px rgba(255, 75, 43, 0.3); }
         .pile-value { font-size: 2.2rem; font-weight: bold; }
@@ -108,7 +79,6 @@
 
         .hand-container { margin-top: 5px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
         .hand-row { display: flex; justify-content: center; gap: 6px; min-height: 72px; }
-        
         .card { width: 48px; height: 72px; background: #fff; color: #000; border-radius: 5px; font-size: 1.3rem; font-weight: bold; display: flex; justify-content: center; align-items: center; box-shadow: 0 3px 6px rgba(0,0,0,0.5); transition: transform 0.1s; touch-action: none; }
         .card-placeholder { width: 48px; height: 72px; }
         .dragging-active { position: fixed; pointer-events: none; z-index: 10000; transform: scale(1.15); opacity: 0.95; box-shadow: 0 10px 20px rgba(0,0,0,0.6); }
@@ -137,7 +107,7 @@
 </div>
 
 <div id="name-screen" class="screen">
-    <p>名前を入力してください</p>
+    <p style="font-weight: bold;">名前を入力してください</p>
     <input type="text" id="name-input" maxlength="10">
     <button class="btn" onclick="saveName()">確定</button>
 </div>
@@ -151,17 +121,17 @@
 
 <div id="join-screen" class="screen">
     <button class="btn-back" onclick="showScreen('menu-screen')">戻る</button>
-    <p>部屋番号</p>
+    <p style="font-weight: bold;">部屋番号</p>
     <input type="number" id="room-input">
     <button id="join-confirm-btn" class="btn" onclick="joinRoom()">参加する</button>
 </div>
 
 <div id="wait-screen" class="screen">
     <button class="btn-back" onclick="location.reload()">戻る</button>
-    <h2 id="room-id-val"></h2>
-    <div id="player-list-wait" style="font-size: 1.2rem; margin-bottom: 20px;"></div>
+    <h2 id="room-id-val" style="font-weight: bold;"></h2>
+    <div id="player-list-wait" style="font-size: 1.2rem; margin-bottom: 20px; font-weight: bold;"></div>
     <div id="host-area" style="display:none;"><button class="btn" style="background:#2e7d32;" onclick="requestCards()">始める</button></div>
-    <p id="guest-msg">ホストが開始するのを待っています...</p>
+    <p id="guest-msg" style="font-weight: bold;">ホストが開始するのを待っています...</p>
 </div>
 
 <div id="game-area">
@@ -171,24 +141,18 @@
     <div id="piles-display">
         <div class="piles-grid">
             <div id="a1" class="pile asc" onclick="sendSignal('a1')"><div class="pile-value">1</div></div>
-            <div class="arrow-container">
-                <div class="custom-arrow-head asc-head"></div>
-                <div class="asc-stem"></div>
-            </div>
+            <div class="arrow-plain asc-text">↑</div>
             <div id="a2" class="pile asc" onclick="sendSignal('a2')"><div class="pile-value">1</div></div>
 
             <div id="d1" class="pile desc" onclick="sendSignal('d1')"><div class="pile-value">100</div></div>
-            <div class="arrow-container">
-                <div class="desc-stem"></div>
-                <div class="custom-arrow-head desc-head"></div>
-            </div>
+            <div class="arrow-plain desc-text">↓</div>
             <div id="d2" class="pile desc" onclick="sendSignal('d2')"><div class="pile-value">100</div></div>
         </div>
     </div>
 
     <div id="consult-box" style="display:none;">
-        <h3 style="margin:0;">相談フェーズ</h3>
-        <div id="consult-list" style="margin:10px 0;"></div>
+        <h3 style="margin:0; font-weight: 900;">相談フェーズ</h3>
+        <div id="consult-list" style="margin:10px 0; font-weight: bold;"></div>
         <div id="host-setup" style="display:none;">
             <input type="number" id="first-num" placeholder="最初の人の数字">
             <button class="btn" style="width:100%; margin:0;" onclick="confirmStart()">決定</button>
@@ -295,7 +259,7 @@
         if(myTurn) {
             const sp = document.getElementById('turn-splash');
             sp.style.opacity = '1';
-            setTimeout(() => sp.style.opacity = '0', 2000); /* 表示時間を2秒に */
+            setTimeout(() => sp.style.opacity = '0', 2000);
             checkGameStatus();
         }
     }
