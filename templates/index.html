@@ -3,54 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>THE GAME - Online</title>
+    <title>THE GAME - 卍解 ONLINE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        /* (前回のCSSをベースにメニュー用のスタイルを追加) */
-        :root { --bg-color: #121212; --accent-color: #ff4757; }
-        body { font-family: sans-serif; text-align: center; background: var(--bg-color); color: white; margin: 0; padding: 10px; }
+        @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700&display=swap');
+
+        :root { 
+            --bg-color: #000000; 
+            --accent-color: #ffffff; 
+            --sub-color: #333333;
+            --asc-glow: rgba(0, 140, 255, 0.4);
+            --desc-glow: rgba(255, 60, 0, 0.4);
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            font-family: 'Shippori Mincho B1', serif;
+        }
+
+        body { 
+            background: var(--bg-color); 
+            background-image: radial-gradient(circle at center, #111 0%, #000 100%);
+            color: var(--accent-color); 
+            margin: 0; 
+            padding: 10px; 
+            overscroll-behavior: none;
+        }
+
+        h1 { 
+            font-size: 1.8rem; 
+            letter-spacing: 0.5rem; 
+            border-bottom: 1px solid var(--accent-color);
+            display: inline-block;
+            margin: 15px 0;
+            padding-bottom: 5px;
+        }
+
         .screen { display: none; height: 100vh; flex-direction: column; justify-content: center; align-items: center; }
         .screen.active { display: flex; }
-        .btn { background: #2f3542; color: white; border: 2px solid #555; padding: 15px 30px; margin: 10px; border-radius: 10px; font-size: 1.2rem; width: 220px; cursor: pointer; }
-        .btn-start { background: #2ed573; display: none; }
-        input { padding: 10px; font-size: 1.5rem; width: 150px; text-align: center; border-radius: 10px; border: none; margin: 10px; }
-        /* ゲーム画面用スタイルは前回と同じ */
-        .pile { width: 80px; height: 110px; border: 2px dashed #444; margin: 5px; display: inline-block; vertical-align: top; background: #252525; border-radius: 10px;}
-        .card { width: 50px; height: 75px; background: white; color: black; display: inline-block; margin: 5px; line-height: 75px; font-weight: bold; border-radius: 5px;}
+        
+        .btn { 
+            background: transparent; color: white; border: 1px solid white; 
+            padding: 12px 25px; margin: 10px; font-size: 1.1rem; 
+            width: 220px; cursor: pointer; transition: 0.3s;
+            text-transform: uppercase;
+        }
+        .btn:active { background: white; color: black; }
+        .btn-start { border: 2px solid #fff; background: rgba(255,255,255,0.1); display: none; }
+        
+        input { 
+            background: #111; color: white; border: 1px solid white;
+            padding: 10px; font-size: 1.5rem; width: 150px; text-align: center; 
+            margin-bottom: 20px;
+        }
+
+        /* 盤面（結界） */
+        .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 400px; margin: 10px auto; }
+        .pile { 
+            height: 120px; border: 1px solid #444; border-radius: 4px; 
+            display: flex; flex-direction: column; justify-content: center; 
+            align-items: center; background: rgba(255,255,255,0.02);
+            transition: 0.3s;
+        }
+        .pile span { font-size: 0.7rem; color: #888; margin-bottom: 5px; }
+        .pile.asc { box-shadow: inset 0 0 15px var(--asc-glow); border-color: #008cff; }
+        .pile.desc { box-shadow: inset 0 0 15px var(--desc-glow); border-color: #ff3c00; }
+        .pile.drag-over { background: rgba(255,255,255,0.1); transform: scale(1.02); }
+        .pile-value { font-size: 2.2rem; text-shadow: 0 0 10px white; }
+
+        /* 手札 */
+        .hand-container { margin-top: 20px; border-top: 1px solid #222; padding-top: 20px; }
+        #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        
+        .card { 
+            width: 55px; height: 85px; line-height: 85px; 
+            background: #fff; color: #000; 
+            border-radius: 2px; font-size: 1.5rem; font-weight: bold; 
+            box-shadow: 0 0 15px rgba(255,255,255,0.2);
+            touch-action: none; cursor: grab;
+        }
+        .card.dragging { opacity: 0.1; transform: scale(1.1); }
+        
+        #finish-btn.active { background: white; color: black; box-shadow: 0 0 20px white; }
+        
+        #info { font-size: 0.8rem; color: #666; margin-bottom: 10px; letter-spacing: 0.1rem; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
     <div id="menu-screen" class="screen active">
-        <h1>THE GAME ONLINE</h1>
+        <h1>THE GAME</h1>
         <button class="btn" onclick="createRoom()">部屋を作る</button>
         <button class="btn" onclick="showJoinInput()">部屋に入る</button>
     </div>
 
     <div id="join-screen" class="screen">
-        <p>4桁の番号を入力</p>
-        <input type="number" id="room-input" placeholder="0000">
+        <p>穿界門の鍵 (部屋番号)</p>
+        <input type="number" id="room-input" pattern="\d*">
         <button class="btn" onclick="joinRoom()">入る</button>
     </div>
 
     <div id="wait-screen" class="screen">
         <h2>部屋番号: <span id="display-room-id">----</span></h2>
-        <p>現在のプレイヤー: <span id="player-count">1</span>名</p>
-        <button id="start-btn" class="btn btn-start" onclick="sendStart()">ゲーム開始</button>
-        <p id="wait-msg">ホストの開始を待っています...</p>
+        <p>現在の隊員: <span id="player-count">1</span>名</p>
+        <button id="start-btn" class="btn btn-start" onclick="sendStart()">開戦</button>
+        <p id="wait-msg">総隊長の指示を待っています...</p>
     </div>
 
     <div id="game-area" style="display:none;">
-        <div id="deck-info">山札: <span id="deck-count">0</span> | 部屋: <span id="room-id-tag"></span></div>
-        <div class="piles">
-            <div id="a1" class="pile" ondragover="event.preventDefault()" ondrop="drop(event, 'a1')">昇順1<br><span class="val">1</span></div>
-            <div id="a2" class="pile" ondragover="event.preventDefault()" ondrop="drop(event, 'a2')">昇順2<br><span class="val">1</span></div>
-            <div id="d1" class="pile" ondragover="event.preventDefault()" ondrop="drop(event, 'd1')">降順1<br><span class="val">100</span></div>
-            <div id="d2" class="pile" ondragover="event.preventDefault()" ondrop="drop(event, 'd2')">降順2<br><span class="val">100</span></div>
+        <div id="info">Room: <span id="room-id-tag"></span> | Deck: <span id="deck-count">0</span></div>
+        
+        <div class="piles-container">
+            <div id="a1" class="pile asc" ondragover="event.preventDefault()" ondragenter="this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'a1')"><span>昇順 ↑</span><div class="pile-value">1</div></div>
+            <div id="a2" class="pile asc" ondragover="event.preventDefault()" ondragenter="this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'a2')"><span>昇順 ↑</span><div class="pile-value">1</div></div>
+            <div id="d1" class="pile desc" ondragover="event.preventDefault()" ondragenter="this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'd1')"><span>降順 ↓</span><div class="pile-value">100</div></div>
+            <div id="d2" class="pile desc" ondragover="event.preventDefault()" ondragenter="this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'd2')"><span>降順 ↓</span><div class="pile-value">100</div></div>
         </div>
-        <div id="hand-container" style="background:#1e1e1e; padding:20px; border-radius:20px; margin-top:20px;">
+
+        <div class="hand-container">
             <div id="hand"></div>
-            <button id="finish-btn" class="btn" onclick="finishTurn()" style="width:80%">補充して終了</button>
+            <button id="finish-btn" class="btn" onclick="finishTurn()">ターン終了</button>
         </div>
     </div>
 
@@ -58,14 +133,10 @@
         const socket = io();
         let myRoom = null;
         let isHost = false;
-        let state = { deck: [], hand: [], piles: {a1:1, a2:1, d1:100, d2:100}, played: 0, maxHand: 8 };
+        let state = { deck: [], hand: [], piles: {a1:1, a2:1, d1:100, d2:100}, played: 0, maxHand: 8, draggedValue: null };
 
-        // --- 部屋管理 ---
-        function createRoom() {
-            isHost = true;
-            socket.emit('create_room');
-        }
-        function showJoinInput() {
+        function createRoom() { isHost = true; socket.emit('create_room'); }
+        function showJoinInput() { 
             document.getElementById('menu-screen').classList.remove('active');
             document.getElementById('join-screen').classList.add('active');
         }
@@ -93,26 +164,18 @@
         }
 
         socket.on('game_started', (data) => {
-            myRoom = document.getElementById('display-room-id').innerText;
             document.getElementById('wait-screen').classList.remove('active');
             document.getElementById('game-area').style.display = 'block';
             document.getElementById('room-id-tag').innerText = myRoom;
-            
-            // 人数に応じて手札セット
             if(data.num_players == 2) state.maxHand = 7;
             else if(data.num_players >= 3) state.maxHand = 6;
-            
             initLocalGame();
         });
 
-        function sendStart() {
-            socket.emit('start_game', { room_id: myRoom });
-        }
+        function sendStart() { socket.emit('start_game', { room_id: myRoom }); }
 
-        // --- ゲームロジック (基本は前回と同じ) ---
         function initLocalGame() {
             state.deck = Array.from({length: 98}, (_, i) => i + 2);
-            // 本来はホストが混ぜて全員に送るのが理想ですが、簡易的に各自で混ぜます
             for(let i=state.deck.length-1; i>0; i--){
                 const j = Math.floor(Math.random()*(i+1));
                 [state.deck[i], state.deck[j]] = [state.deck[j], state.deck[i]];
@@ -121,18 +184,22 @@
             render();
         }
 
-        function drop(e, pileId) {
-            const card = parseInt(e.dataTransfer.getData("text"));
+        function handleDrop(e, pileId) {
+            e.preventDefault();
+            document.getElementById(pileId).classList.remove('drag-over');
+            const card = state.draggedValue;
+            if (card === null) return;
+
             const top = state.piles[pileId];
             const isAsc = pileId.startsWith('a');
             if((isAsc && (card > top || card == top-10)) || (!isAsc && (card < top || card == top+10))) {
                 state.piles[pileId] = card;
                 state.hand = state.hand.filter(c => c !== card);
                 state.played++;
-                // サーバーを通じて他全員に通知
                 socket.emit('sync_move', { room_id: myRoom, pileId: pileId, val: card });
                 render();
             }
+            state.draggedValue = null;
         }
 
         socket.on('update_board', (data) => {
@@ -141,14 +208,19 @@
         });
 
         function render() {
-            for(let k in state.piles) document.querySelector(`#${k} .val`).innerText = state.piles[k];
+            for(let k in state.piles) document.querySelector(`#${k} .pile-value`).innerText = state.piles[k];
             document.getElementById('deck-count').innerText = state.deck.length;
             const handEl = document.getElementById('hand');
             handEl.innerHTML = '';
             state.hand.forEach(v => {
                 const c = document.createElement('div');
                 c.className = 'card'; c.innerText = v; c.draggable = true;
-                c.ondragstart = (e) => e.dataTransfer.setData("text", v);
+                c.ondragstart = (e) => { 
+                    state.draggedValue = v; 
+                    e.target.classList.add('dragging');
+                    e.dataTransfer.setData("text", v); 
+                };
+                c.ondragend = (e) => e.target.classList.remove('dragging');
                 handEl.appendChild(c);
             });
             const btn = document.getElementById('finish-btn');
@@ -163,6 +235,7 @@
             state.played = 0;
             render();
         }
+        socket.on('error', (data) => alert(data.message));
     </script>
 </body>
 </html>
