@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>THE GAME - Online</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        /* (前回のCSSをベースにメニュー用のスタイルを追加) */
+        :root { --bg-color: #121212; --accent-color: #ff4757; }
+        body { font-family: sans-serif; text-align: center; background: var(--bg-color); color: white; margin: 0; padding: 10px; }
+        .screen { display: none; height: 100vh; flex-direction: column; justify-content: center; align-items: center; }
+        .screen.active { display: flex; }
+        .btn { background: #2f3542; color: white; border: 2px solid #555; padding: 15px 30px; margin: 10px; border-radius: 10px; font-size: 1.2rem; width: 220px; cursor: pointer; }
+        .btn-start { background: #2ed573; display: none; }
+        input { padding: 10px; font-size: 1.5rem; width: 150px; text-align: center; border-radius: 10px; border: none; margin: 10px; }
+        /* ゲーム画面用スタイルは前回と同じ */
+        .pile { width: 80px; height: 110px; border: 2px dashed #444; margin: 5px; display: inline-block; vertical-align: top; background: #252525; border-radius: 10px;}
+        .card { width: 50px; height: 75px; background: white; color: black; display: inline-block; margin: 5px; line-height: 75px; font-weight: bold; border-radius: 5px;}
+    </style>
+</head>
+<body>
+
+    <div id="menu-screen" class="screen active">
+        <h1>THE GAME ONLINE</h1>
+        <button class="btn" onclick="createRoom()">部屋を作る</button>
+        <button class="btn" onclick="showJoinInput()">部屋に入る</button>
+    </div>
+
+    <div id="join-screen" class="screen">
+        <p>4桁の番号を入力</p>
+        <input type="number" id="room-input" placeholder="0000">
+        <button class="btn" onclick="joinRoom()">入る</button>
+    </div>
+
+    <div id="wait-screen" class="screen">
+        <h2>部屋番号: <span id="display-room-id">----</span></h2>
+        <p>現在のプレイヤー: <span id="player-count">1</span>名</p>
+        <button id="start-btn" class="btn btn-start" onclick="sendStart()">ゲーム開始</button>
+        <p id="wait-msg">ホストの開始を待っています...</p>
+    </div>
+
+    <div id="game-area" style="display:none;">
+        <div id="deck-info">山札: <span id="deck-count">0</span> | 部屋: <span id="room-id-tag"></span></div>
+        <div class="piles">
+            <div id="a1" class="pile" ondragover="event.preventDefault()" ondrop="drop(event, 'a1')">昇順1<br><span class="val">1</span></div>
+            <div id="a2" class="pile" ondragover="event.preventDefault()" ondrop="drop(event, 'a2')">昇順2<br><span class="val">1</span></div>
+            <div id="d1" class="pile" ondragover="event.preventDefault()" ondrop="drop(event, 'd1')">降順1<br><span class="val">100</span></div>
+            <div id="d2" class="pile" ondragover="event.preventDefault()" ondrop="drop(event, 'd2')">降順2<br><span class="val">100</span></div>
+        </div>
+        <div id="hand-container" style="background:#1e1e1e; padding:20px; border-radius:20px; margin-top:20px;">
+            <div id="hand"></div>
+            <button id="finish-btn" class="btn" onclick="finishTurn()" style="width:80%">補充して終了</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let myRoom = null;
+        let isHost = false;
+        let state = { deck: [], hand: [], piles: {a1:1, a2:1, d1:100, d2:100}, played: 0, maxHand: 8 };
+
+        // --- 部屋管理 ---
+        function createRoom() {
+            isHost = true;
+            socket.emit('create_room');
+        }
+        function showJoinInput() {
+            document.getElementById('menu-screen').classList.remove('active');
+            document.getElementById('join-screen').classList.add('active');
+        }
+        function joinRoom() {
+            const id = document.getElementById('room-input').value;
+            socket.emit('join_room', { room_id: id });
+        }
+
+        socket.on('room_created', (data) => {
+            myRoom = data.room_id;
+            showWaitScreen(data.room_id, data.player_count);
+            document.getElementById('start-btn').style.display = 'block';
+            document.getElementById('wait-msg').style.display = 'none';
+        });
+
+        socket.on('player_joined', (data) => {
+            document.getElementById('player-count').innerText = data.player_count;
+        });
+
+        function showWaitScreen(id, count) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('wait-screen').classList.add('active');
+            document.getElementById('display-room-id').innerText = id;
+            document.getElementById('player-count').innerText = count;
+        }
+
+        socket.on('game_started', (data) => {
+            myRoom = document.getElementById('display-room-id').innerText;
+            document.getElementById('wait-screen').classList.remove('active');
+            document.getElementById('game-area').style.display = 'block';
+            document.getElementById('room-id-tag').innerText = myRoom;
+            
+            // 人数に応じて手札セット
+            if(data.num_players == 2) state.maxHand = 7;
+            else if(data.num_players >= 3) state.maxHand = 6;
+            
+            initLocalGame();
+        });
+
+        function sendStart() {
+            socket.emit('start_game', { room_id: myRoom });
+        }
+
+        // --- ゲームロジック (基本は前回と同じ) ---
+        function initLocalGame() {
+            state.deck = Array.from({length: 98}, (_, i) => i + 2);
+            // 本来はホストが混ぜて全員に送るのが理想ですが、簡易的に各自で混ぜます
+            for(let i=state.deck.length-1; i>0; i--){
+                const j = Math.floor(Math.random()*(i+1));
+                [state.deck[i], state.deck[j]] = [state.deck[j], state.deck[i]];
+            }
+            state.hand = state.deck.splice(0, state.maxHand).sort((a,b)=>a-b);
+            render();
+        }
+
+        function drop(e, pileId) {
+            const card = parseInt(e.dataTransfer.getData("text"));
+            const top = state.piles[pileId];
+            const isAsc = pileId.startsWith('a');
+            if((isAsc && (card > top || card == top-10)) || (!isAsc && (card < top || card == top+10))) {
+                state.piles[pileId] = card;
+                state.hand = state.hand.filter(c => c !== card);
+                state.played++;
+                // サーバーを通じて他全員に通知
+                socket.emit('sync_move', { room_id: myRoom, pileId: pileId, val: card });
+                render();
+            }
+        }
+
+        socket.on('update_board', (data) => {
+            state.piles[data.pileId] = data.val;
+            render();
+        });
+
+        function render() {
+            for(let k in state.piles) document.querySelector(`#${k} .val`).innerText = state.piles[k];
+            document.getElementById('deck-count').innerText = state.deck.length;
+            const handEl = document.getElementById('hand');
+            handEl.innerHTML = '';
+            state.hand.forEach(v => {
+                const c = document.createElement('div');
+                c.className = 'card'; c.innerText = v; c.draggable = true;
+                c.ondragstart = (e) => e.dataTransfer.setData("text", v);
+                handEl.appendChild(c);
+            });
+            const btn = document.getElementById('finish-btn');
+            const min = state.deck.length > 0 ? 2 : 1;
+            btn.className = state.played >= min ? 'btn active' : 'btn';
+        }
+
+        function finishTurn() {
+            const min = state.deck.length > 0 ? 2 : 1;
+            if(state.played < min) return;
+            state.hand = [...state.hand, ...state.deck.splice(0, state.maxHand-state.hand.length)].sort((a,b)=>a-b);
+            state.played = 0;
+            render();
+        }
+    </script>
+</body>
+</html>
