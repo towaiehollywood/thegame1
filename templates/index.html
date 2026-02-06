@@ -7,55 +7,52 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
         :root { --bg: #1a1a1a; --accent: #ffffff; --my-turn-bg: #2e7d32; --others-turn-bg: #c62828; }
-        * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; font-family: sans-serif; }
-        body { background: var(--bg); color: white; margin: 0; padding: 10px; min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; align-items: center; }
+        * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; font-family: sans-serif; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; position: fixed; }
+        body { background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; }
 
         #splash { position: fixed; inset: 0; background: black; display: flex; justify-content: center; align-items: center; z-index: 2000; transition: opacity 1s; }
-        #splash h1 { font-size: 2rem; text-align: center; margin: 0; }
-
-        .screen { display: none; width: 100%; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; position: relative; }
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .screen.active { display: flex; }
 
-        #user-info { position: absolute; top: 20px; left: 20px; font-size: 0.9rem; border-bottom: 1px solid #666; cursor: pointer; padding: 5px; }
-        .btn-back { position: absolute; top: 20px; left: 20px; width: auto; padding: 8px 15px; font-size: 0.9rem; border: 1px solid white; background: #333; color: white; border-radius: 4px; z-index: 100; }
+        /* ターン開始時のデカ文字演出 */
+        #turn-splash { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; font-weight: bold; color: white; text-shadow: 0 0 20px #2e7d32; z-index: 1500; pointer-events: none; opacity: 0; transition: opacity 0.5s; }
 
         .btn { background: #333; color: white; border: 1px solid white; padding: 12px 25px; margin: 10px; font-size: 1.1rem; width: 220px; cursor: pointer; border-radius: 4px; }
-        .btn:active { background: white; color: black; }
-        .btn:disabled { opacity: 0.3; }
+        .btn-back { position: absolute; top: 20px; left: 20px; width: auto; padding: 8px 15px; font-size: 0.9rem; border: 1px solid white; background: #333; z-index: 100; }
+        input { background: #000; color: white; border: 1px solid white; padding: 10px; font-size: 1.2rem; width: 220px; text-align: center; margin-bottom: 15px; -webkit-user-select: auto; user-select: auto; }
 
-        input { background: #000; color: white; border: 1px solid white; padding: 10px; font-size: 1.2rem; width: 220px; text-align: center; margin-bottom: 15px; }
-        /* プレースホルダーの色 */
-        input::placeholder { color: #555; font-size: 0.9rem; }
+        #turn-indicator { width: 100%; padding: 10px; font-weight: bold; text-align: center; position: fixed; top: 0; left: 0; z-index: 10; display: none; font-size: 0.9rem; }
+        #game-info { font-size: 0.8rem; color: #888; position: fixed; top: 40px; width: 100%; text-align: center; display: none; }
 
-        #turn-indicator { width: 100%; padding: 12px; font-weight: bold; text-align: center; position: fixed; top: 0; left: 0; z-index: 10; display: none; }
-        .my-turn { background: var(--my-turn-bg); }
-        .others-turn { background: var(--others-turn-bg); }
-
-        #piles-area { display: none; margin-top: 20px; }
-        .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; justify-content: center; margin: 10px auto; width: fit-content; }
-        .pile { 
-            height: 110px; width: 95px; border: 2px solid #444; border-radius: 8px; 
-            display: flex; justify-content: center; align-items: center; background: #222; position: relative;
-        }
+        #game-area { width: 100%; height: 100%; display: none; text-align: center; padding-top: 70px; }
+        .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; justify-content: center; margin: 0 auto; width: fit-content; }
+        .pile { height: 100px; width: 85px; border: 2px solid #444; border-radius: 8px; display: flex; justify-content: center; align-items: center; background: #222; position: relative; transition: 0.2s; }
         .pile.asc { border-color: #008cff; }
         .pile.desc { border-color: #ff3c00; }
-        .pile-value { font-size: 2.2rem; font-weight: bold; }
+        .pile-value { font-size: 2rem; font-weight: bold; }
 
-        .hand-container { margin-top: 20px; border-top: 1px solid #444; padding-top: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; }
-        #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 320px; min-height: 85px; }
-        .card { width: 52px; height: 80px; background: #fff; color: #000; border-radius: 4px; font-size: 1.4rem; font-weight: bold; display: flex; justify-content: center; align-items: center; }
-        .card-placeholder { width: 52px; height: 80px; }
+        /* 置いた瞬間のエフェクト */
+        @keyframes place-flash { 0% { background: #fff; transform: scale(1.1); } 100% { background: #222; transform: scale(1); } }
+        .placed-effect { animation: place-flash 0.4s ease-out; }
 
-        #consult-box { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-top: 20px; width: 90%; max-width: 400px; border: 1px solid #444; }
-        #consult-list { text-align: left; margin: 15px 0; font-size: 1.1rem; line-height: 1.8; }
+        .hand-container { margin-top: 10px; border-top: 1px solid #444; padding-top: 10px; width: 100%; display: flex; flex-direction: column; align-items: center; }
+        #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; max-width: 320px; }
+        .card { width: 48px; height: 72px; background: #fff; color: #000; border-radius: 4px; font-size: 1.3rem; font-weight: bold; display: flex; justify-content: center; align-items: center; }
+        .card-placeholder { width: 48px; height: 72px; }
 
+        @keyframes glow-btn { 0%, 100% { box-shadow: 0 0 5px #fff; } 50% { box-shadow: 0 0 20px #fff; } }
+        #finish-btn.glow { animation: glow-btn 1.5s infinite; border-color: #fff; }
+
+        #consult-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin: 0 auto 10px; width: 90%; max-width: 400px; border: 1px solid #444; }
         @keyframes moya { 0%, 100% { box-shadow: 0 0 5px #fff; } 50% { box-shadow: 0 0 25px #fff; } }
         .signal-glow { animation: moya 0.5s infinite; border-color: #fff !important; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
 <div id="splash"><h1>ザ・ゲーム<br>ONLINE</h1></div>
+<div id="turn-splash">自分のターン</div>
 
 <div id="name-screen" class="screen">
     <p>名前を入力してください</p>
@@ -63,9 +60,8 @@
     <button class="btn" onclick="saveName()">確定</button>
 </div>
 
-<div id="menu-screen" class="screen">
-    <div id="user-info" onclick="changeName()">名前: <span id="display-name"></span></div>
-    <h1 style="margin-bottom: 30px;">THE GAME</h1>
+<div id="menu-screen" class="screen active">
+    <h1>THE GAME</h1>
     <button class="btn" onclick="createRoom()">部屋を作る</button>
     <button class="btn" onclick="showScreen('join-screen')">部屋に入る</button>
 </div>
@@ -74,211 +70,152 @@
     <button class="btn-back" onclick="showScreen('menu-screen')">戻る</button>
     <p>部屋番号</p>
     <input type="number" id="room-input">
-    <button id="join-confirm-btn" class="btn" onclick="joinRoom()">参加する</button>
+    <button class="btn" onclick="joinRoom()">参加する</button>
 </div>
 
 <div id="wait-screen" class="screen">
     <button class="btn-back" onclick="location.reload()">戻る</button>
-    <h2>部屋番号: <span id="room-id-val"></span></h2>
-    <div id="player-list-wait" style="margin: 20px 0; font-size: 1.1rem;"></div>
-    <div id="host-area" style="display:none;">
-        <button class="btn" style="background:#2e7d32;" onclick="requestCards()">カードを配って相談する</button>
-    </div>
-    <p id="guest-msg">ホストが開始するのを待っています...</p>
+    <h2 id="room-id-val"></h2>
+    <div id="player-list-wait"></div>
+    <div id="host-area" style="display:none;"><button class="btn" onclick="requestCards()">始める</button></div>
 </div>
 
-<div id="game-area" style="display:none; width: 100%; text-align: center; padding-top: 60px;">
+<div id="game-area">
     <div id="turn-indicator"></div>
+    <div id="game-info">山札: <span id="deck-count">0</span> | 出した枚数: <span id="played-count">0</span></div>
 
-    <div id="piles-area">
-        <div class="piles-container">
-            <div id="a1" class="pile asc" onclick="sendSignal('a1')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a1')"><div class="pile-value">1</div></div>
-            <div id="a2" class="pile asc" onclick="sendSignal('a2')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a2')"><div class="pile-value">1</div></div>
-            <div id="d1" class="pile desc" onclick="sendSignal('d1')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'd1')"><div class="pile-value">100</div></div>
-            <div id="d2" class="pile desc" onclick="sendSignal('d2')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'd2')"><div class="pile-value">100</div></div>
-        </div>
+    <div class="piles-container">
+        <div id="a1" class="pile asc" onclick="sendSignal('a1')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a1')"><div class="pile-value">1</div></div>
+        <div id="a2" class="pile asc" onclick="sendSignal('a2')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a2')"><div class="pile-value">1</div></div>
+        <div id="d1" class="pile desc" onclick="sendSignal('d1')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'd1')"><div class="pile-value">100</div></div>
+        <div id="d2" class="pile desc" onclick="sendSignal('d2')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'd2')"><div class="pile-value">100</div></div>
     </div>
 
-    <div id="consult-box" style="display:none; margin: 0 auto 20px;">
-        <h3>相談フェーズ</h3>
-        <p style="font-size: 0.8rem; color: #aaa;">手札を見て、最初の人を相談してください</p>
+    <div id="consult-box" style="display:none;">
         <div id="consult-list"></div>
-        
-        <div id="host-setup" style="display:none;">
-            <input type="number" id="first-player-number" placeholder="プレイヤーの数字を入力">
-            <button class="btn" style="width:100%; margin:0;" onclick="confirmStart()">決定</button>
-        </div>
+        <div id="host-setup" style="display:none;"><input type="number" id="first-num" placeholder="最初の人の数字"><button class="btn" onclick="confirmStart()">決定</button></div>
     </div>
 
     <div class="hand-container">
-        <p style="margin:0 0 10px 0; font-size:0.8rem; color:#888;">自分の手札</p>
         <div id="hand"></div>
-        <button id="finish-btn" class="btn" style="display:none; margin-top: 20px;" onclick="finishTurn()">ターン終了</button>
+        <button id="finish-btn" class="btn" style="display:none;" onclick="finishTurn()">ターン終了</button>
     </div>
 </div>
 
 <script>
     const socket = io();
     let myName = localStorage.getItem('thegame_name') || "";
-    let myRoom = null, isHost = false, myTurn = false;
-    let turnOrder = [], currentIdx = -1;
-    let consultNames = []; // 相談中の名前リストを保持
-    let state = { deck: [], hand: [], piles: {a1:1, a2:1, d1:100, d2:100}, played: 0, maxHand: 8, draggedValue: null };
+    let myRoom = null, isHost = false, myTurn = false, turnOrder = [], currentIdx = -1, consultNames = [];
+    let state = { deckCount: 0, hand: [], piles: {a1:1, a2:1, d1:100, d2:100}, played: 0, maxHand: 8, draggedValue: null };
 
-    window.onload = () => {
-        setTimeout(() => {
-            const sp = document.getElementById('splash');
-            sp.style.opacity = '0';
-            setTimeout(() => {
-                sp.style.display = 'none';
-                if (!myName) showScreen('name-screen'); else showMenu();
-            }, 1000);
-        }, 1000);
-    };
+    window.onload = () => { setTimeout(() => { document.getElementById('splash').style.display = 'none'; if(!myName) showScreen('name-screen'); else showMenu(); }, 1000); };
+    function showScreen(id) { document.querySelectorAll('.screen, #game-area').forEach(s => s.style.display = 'none'); document.getElementById(id).style.display = (id==='game-area'?'block':'flex'); }
+    function saveName() { myName = document.getElementById('name-input').value.trim(); if(myName){ localStorage.setItem('thegame_name', myName); showMenu(); } }
+    function showMenu() { showScreen('menu-screen'); }
+    function createRoom() { isHost = true; socket.emit('create_room', {name: myName}); }
+    function joinRoom() { myRoom = document.getElementById('room-input').value; if(myRoom) socket.emit('join_room', {room_id: myRoom, name: myName}); }
+    
+    socket.on('room_created', data => { myRoom = data.room_id; document.getElementById('room-id-val').innerText = "部屋: "+data.room_id; showWaitScreen(data.players); document.getElementById('host-area').style.display='block'; });
+    socket.on('player_joined', data => { showWaitScreen(data.players); });
+    function showWaitScreen(ps) { showScreen('wait-screen'); document.getElementById('player-list-wait').innerText = ps.join(', '); }
+    function requestCards() { socket.emit('request_initial_cards', {room_id: myRoom}); }
 
-    function showScreen(id) {
-        document.querySelectorAll('.screen, #game-area').forEach(s => s.style.display = 'none');
-        const target = document.getElementById(id);
-        target.style.display = (id === 'game-area') ? 'block' : 'flex';
-    }
-
-    function saveName() {
-        const val = document.getElementById('name-input').value.trim();
-        if (val) { myName = val; localStorage.setItem('thegame_name', val); showMenu(); }
-    }
-    function showMenu() { document.getElementById('display-name').innerText = myName; showScreen('menu-screen'); }
-    function changeName() { showScreen('name-screen'); }
-
-    function createRoom() { isHost = true; socket.emit('create_room', { name: myName }); }
-    function joinRoom() {
-        const rid = document.getElementById('room-input').value;
-        if(rid) { myRoom = rid; isHost = false; socket.emit('join_room', { room_id: rid, name: myName }); }
-    }
-
-    socket.on('room_created', (data) => {
-        myRoom = data.room_id;
-        document.getElementById('room-id-val').innerText = data.room_id;
-        document.getElementById('player-list-wait').innerText = "プレイヤー: " + data.players.join(', ');
-        document.getElementById('host-area').style.display = 'block';
-        document.getElementById('guest-msg').style.display = 'none';
-        showScreen('wait-screen');
-    });
-
-    socket.on('player_joined', (data) => {
-        document.getElementById('player-list-wait').innerText = "プレイヤー: " + data.players.join(', ');
-    });
-
-    function requestCards() { socket.emit('request_initial_cards', { room_id: myRoom }); }
-
-    socket.on('distribute_initial_cards', (data) => {
+    socket.on('distribute_initial_cards', data => {
         showScreen('game-area');
-        state.deck = data.deck;
+        state.deckCount = data.deck_count;
         state.hand = data.hands[myName].sort((a,b)=>a-b);
-        state.maxHand = data.num_players === 2 ? 7 : (data.num_players >= 3 ? 6 : 8);
-        
+        state.maxHand = data.num_players==2?7:(data.num_players>=3?6:8);
         document.getElementById('consult-box').style.display = 'block';
-        const listEl = document.getElementById('consult-list');
         consultNames = Object.keys(data.hands);
-        listEl.innerHTML = consultNames.map((name, i) => `${i + 1}. ${name}`).join('<br>');
-        
-        if (isHost && data.num_players > 1) {
-            document.getElementById('host-setup').style.display = 'block';
-        } else if (data.num_players === 1) {
-            confirmStart(1); // 1人なら自動で自分
-        }
+        document.getElementById('consult-list').innerHTML = consultNames.map((n,i)=>`${i+1}. ${n}`).join('<br>');
+        if(isHost && data.num_players>1) document.getElementById('host-setup').style.display='block';
+        else if(data.num_players===1) confirmStart(1);
         render();
     });
 
-    function confirmStart(fixedNum) {
-        let num = fixedNum || parseInt(document.getElementById('first-player-number').value);
-        if(!num || num < 1 || num > consultNames.length) return alert("正しいプレイヤー番号を入力してください");
-        
-        const firstPlayerName = consultNames[num - 1];
-        socket.emit('confirm_first_player', { room_id: myRoom, firstPlayer: firstPlayerName });
+    function confirmStart(n) { 
+        let idx = n || document.getElementById('first-num').value;
+        if(!idx) return;
+        socket.emit('confirm_first_player', {room_id: myRoom, firstPlayer: consultNames[idx-1]});
     }
 
-    socket.on('start_game_with_order', (data) => {
-        turnOrder = data.order;
-        currentIdx = 0;
+    socket.on('start_game_with_order', data => {
+        turnOrder = data.order; currentIdx = 0;
         document.getElementById('consult-box').style.display = 'none';
-        document.getElementById('piles-area').style.display = 'block';
         document.getElementById('finish-btn').style.display = 'block';
         document.getElementById('turn-indicator').style.display = 'block';
-        updateTurnDisplay();
-        render();
+        document.getElementById('game-info').style.display = 'block';
+        updateTurnDisplay(); render();
     });
 
     function updateTurnDisplay() {
         const cur = turnOrder[currentIdx];
-        const next = turnOrder[(currentIdx+1)%turnOrder.length];
-        const el = document.getElementById('turn-indicator');
         myTurn = (cur === myName);
-        el.innerText = myTurn ? `自分のターン (次は ${next})` : `${cur}のターン (次は ${next})`;
-        el.className = myTurn ? 'my-turn' : 'others-turn';
+        document.getElementById('turn-indicator').innerText = myTurn ? "あなたのターン" : cur + "のターン";
+        document.getElementById('turn-indicator').className = myTurn ? 'my-turn' : 'others-turn';
+        if(myTurn) {
+            const sp = document.getElementById('turn-splash');
+            sp.style.opacity = '1'; setTimeout(() => sp.style.opacity = '0', 1000);
+        }
     }
 
-    function sendSignal(pid) { socket.emit('send_signal', { room_id: myRoom, pileId: pid }); }
-    socket.on('receive_signal', (data) => {
+    function sendSignal(pid) { socket.emit('send_signal', {room_id: myRoom, pileId: pid}); }
+    socket.on('receive_signal', data => {
         const p = document.getElementById(data.pileId);
-        p.classList.add('signal-glow');
-        setTimeout(() => p.classList.remove('signal-glow'), 1500);
+        p.classList.add('signal-glow'); setTimeout(() => p.classList.remove('signal-glow'), 1500);
     });
 
     function handleDrop(e, pid) {
         e.preventDefault();
-        if(!myTurn) return;
-        const val = state.draggedValue;
-        if(val === null) return;
-        const top = state.piles[pid];
-        const isAsc = pid.startsWith('a');
+        if(!myTurn || state.draggedValue === null) return;
+        const val = state.draggedValue, top = state.piles[pid], isAsc = pid.startsWith('a');
         if((isAsc && (val > top || val == top-10)) || (!isAsc && (val < top || val == top+10))) {
-            state.piles[pid] = val;
-            state.hand[state.hand.indexOf(val)] = null;
-            state.played++;
-            socket.emit('sync_move', { room_id: myRoom, pileId: pid, val: val });
+            state.piles[pid] = val; state.hand[state.hand.indexOf(val)] = null; state.played++;
+            socket.emit('sync_move', {room_id: myRoom, pileId: pid, val: val});
             render();
         }
         state.draggedValue = null;
     }
 
-    socket.on('update_board', (data) => { state.piles[data.pileId] = data.val; render(); });
+    socket.on('update_board', data => {
+        state.piles[data.pileId] = data.val;
+        const p = document.getElementById(data.pileId);
+        p.classList.add('placed-effect'); setTimeout(() => p.classList.remove('placed-effect'), 400);
+        render();
+    });
 
     function render() {
-        for(let k in state.piles) {
-            const el = document.querySelector(`#${k} .pile-value`);
-            if(el) el.innerText = state.piles[k];
-        }
-        const h = document.getElementById('hand');
-        h.innerHTML = '';
+        for(let k in state.piles) document.querySelector(`#${k} .pile-value`).innerText = state.piles[k];
+        document.getElementById('deck-count').innerText = state.deckCount;
+        document.getElementById('played-count').innerText = state.played;
+        const h = document.getElementById('hand'); h.innerHTML = '';
         state.hand.forEach(v => {
             const d = document.createElement('div');
-            if (v === null) d.className = 'card-placeholder';
-            else {
-                d.className = 'card'; d.innerText = v; d.draggable = myTurn;
-                d.ondragstart = (e) => { if(myTurn) { state.draggedValue = v; e.dataTransfer.setData("text", v); } };
-            }
+            if(v===null) d.className='card-placeholder';
+            else { d.className='card'; d.innerText=v; d.draggable=myTurn; d.ondragstart=e=>{ if(myTurn){ state.draggedValue=v; e.dataTransfer.setData("text",v); } }; }
             h.appendChild(d);
         });
-        const fb = document.getElementById('finish-btn');
-        const min = state.deck.length > 0 ? 2 : 1;
-        fb.className = (state.played >= min) ? 'btn' : 'btn disabled';
+        const fb = document.getElementById('finish-btn'), min = state.deckCount>0?2:1;
+        fb.className = (state.played >= min) ? 'btn glow' : 'btn';
     }
 
     function finishTurn() {
-        const min = state.deck.length > 0 ? 2 : 1;
-        if(state.played < min || !myTurn) return;
-        let newH = state.hand.filter(v => v !== null);
-        newH = [...newH, ...state.deck.splice(0, state.maxHand - newH.length)].sort((a,b)=>a-b);
-        state.hand = newH;
-        state.played = 0;
-        currentIdx = (currentIdx + 1) % turnOrder.length;
-        socket.emit('next_turn', { room_id: myRoom, nextIdx: currentIdx });
-        updateTurnDisplay();
-        render();
+        if(state.played < (state.deckCount>0?2:1)) return;
+        const drawCount = state.hand.filter(v=>v===null).length;
+        socket.emit('draw_cards', {room_id: myRoom, count: drawCount});
     }
 
-    socket.on('update_turn', (d) => { currentIdx = d.nextIdx; updateTurnDisplay(); render(); });
-    socket.on('error', (d) => { alert(d.message); location.reload(); });
+    socket.on('receive_drawn_cards', data => {
+        state.deckCount = data.deck_count;
+        let drawnIdx = 0;
+        state.hand = state.hand.map(v => (v === null && drawnIdx < data.cards.length) ? data.cards[drawnIdx++] : v).sort((a,b)=>a?b?a-b:-1:1);
+        state.played = 0; currentIdx = (currentIdx + 1) % turnOrder.length;
+        socket.emit('next_turn', {room_id: myRoom, nextIdx: currentIdx});
+        updateTurnDisplay(); render();
+    });
+
+    socket.on('update_turn', data => { currentIdx = data.nextIdx; updateTurnDisplay(); render(); });
+    socket.on('error', d => { alert(d.message); location.reload(); });
 </script>
 </body>
 </html>
