@@ -10,10 +10,21 @@
             --felt-green: #0a5c36; 
             --my-turn-bg: #2e7d32; 
             --others-turn-bg: #c62828; 
+            --bg-dark: #000000;
         }
         
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; font-family: sans-serif; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-        html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; position: fixed; }
+        
+        /* モバイル版の背景色をPCと統一 */
+        html, body { 
+            margin: 0; 
+            padding: 0; 
+            height: 100%; 
+            width: 100%; 
+            overflow: hidden; 
+            position: fixed;
+            background-color: var(--bg-dark); /* 背景色を黒に固定 */
+        }
         
         body { 
             background: radial-gradient(circle, #1a1a1a 0%, #000 100%); 
@@ -23,24 +34,8 @@
             align-items: center; 
         }
 
-        #splash { 
-            position: fixed; 
-            inset: 0; 
-            background: black; 
-            display: flex; 
-            flex-direction: column;
-            justify-content: center; 
-            align-items: center; 
-            z-index: 2000; 
-            transition: opacity 1s; 
-        }
-        #splash h1 { 
-            font-size: 2.5rem; 
-            text-align: center; 
-            margin: 0; 
-            line-height: 1.2;
-            letter-spacing: 0.3rem;
-        }
+        #splash { position: fixed; inset: 0; background: black; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; transition: opacity 1s; }
+        #splash h1 { font-size: 2.5rem; text-align: center; margin: 0; line-height: 1.2; letter-spacing: 0.3rem; }
 
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .screen.active { display: flex; }
@@ -51,12 +46,10 @@
         .btn-back { position: absolute; top: 20px; left: 20px; width: auto; padding: 8px 15px; font-size: 0.9rem; border: 1px solid white; background: #333; z-index: 100; }
         input { background: #000; color: white; border: 1px solid white; padding: 10px; font-size: 1.2rem; width: 220px; text-align: center; margin-bottom: 15px; -webkit-user-select: auto; user-select: auto; }
 
-        /* 修正箇所：ターン表示を中央揃えに固定 */
         #turn-indicator { 
             width: 100%; 
             padding: 10px; 
             font-weight: bold; 
-            text-align: center; 
             position: fixed; 
             top: 0; 
             left: 0; 
@@ -71,41 +64,53 @@
         .my-turn { background: var(--my-turn-bg); }
         .others-turn { background: var(--others-turn-bg); }
 
-        #game-info { font-size: 0.8rem; color: #ccc; position: fixed; top: 40px; width: 100%; text-align: center; display: none; text-shadow: 1px 1px 2px black; }
+        /* 山札・枚数表記を大きく */
+        #game-info { 
+            font-size: 1.1rem; 
+            font-weight: bold;
+            color: #ffffff; 
+            position: fixed; 
+            top: 45px; 
+            width: 100%; 
+            text-align: center; 
+            display: none; 
+            text-shadow: 0 0 5px rgba(0,0,0,1);
+            z-index: 5;
+        }
+        #game-info span { color: #2ed573; font-size: 1.3rem; margin: 0 5px; }
 
-        #game-area { width: 100%; height: 100%; display: none; text-align: center; padding-top: 70px; }
+        #game-area { width: 100%; height: 100%; display: none; text-align: center; padding-top: 80px; }
         
         #piles-display { 
             display: none; 
             background: var(--felt-green); 
-            padding: 20px; 
+            padding: 15px; 
             border-radius: 15px; 
-            border: 5px solid #4a3000; 
+            border: 4px solid #4a3000; 
             box-shadow: inset 0 0 50px rgba(0,0,0,0.5), 0 5px 15px rgba(0,0,0,0.8);
-            margin: 10px auto;
+            margin: 5px auto;
             width: fit-content;
         }
 
-        .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; justify-content: center; }
-        
-        .pile-wrapper { display: flex; align-items: center; gap: 5px; }
-        .arrow { font-size: 1.2rem; font-weight: bold; color: rgba(255,255,255,0.5); }
+        .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; justify-content: center; }
+        .pile-wrapper { display: flex; align-items: center; gap: 4px; }
+        .arrow { font-size: 1.1rem; font-weight: bold; color: rgba(255,255,255,0.6); }
 
         .pile { 
-            height: 95px; width: 80px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; 
+            height: 90px; width: 75px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; 
             display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.3); position: relative; transition: 0.3s; 
         }
         .pile.asc { border-color: #008cff; }
         .pile.desc { border-color: #ff3c00; }
-        .pile-value { font-size: 2rem; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .pile-value { font-size: 1.8rem; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 
         @keyframes soft-glow { 0% { box-shadow: 0 0 0px #fff; } 50% { box-shadow: 0 0 30px #fff; background: rgba(255,255,255,0.2); } 100% { box-shadow: 0 0 0px #fff; } }
         .placed-effect { animation: soft-glow 0.8s ease-out; }
 
-        .hand-container { margin-top: 10px; width: 100%; display: flex; flex-direction: column; align-items: center; }
-        #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; max-width: 320px; }
-        .card { width: 48px; height: 72px; background: #fff; color: #000; border-radius: 4px; font-size: 1.3rem; font-weight: bold; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-        .card-placeholder { width: 48px; height: 72px; }
+        .hand-container { margin-top: 5px; width: 100%; display: flex; flex-direction: column; align-items: center; }
+        #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; max-width: 320px; }
+        .card { width: 46px; height: 68px; background: #fff; color: #000; border-radius: 4px; font-size: 1.2rem; font-weight: bold; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .card-placeholder { width: 46px; height: 68px; }
 
         #finish-btn.glow { animation: soft-glow 2s infinite; border-color: #fff; }
 
@@ -174,7 +179,7 @@
 
     <div class="hand-container">
         <div id="hand"></div>
-        <button id="finish-btn" class="btn" style="display:none; margin-top: 15px;" onclick="finishTurn()">ターン終了</button>
+        <button id="finish-btn" class="btn" style="display:none; margin-top: 10px;" onclick="finishTurn()">ターン終了</button>
     </div>
 </div>
 
@@ -222,7 +227,7 @@
     });
 
     socket.on('player_joined', data => { updateWaitList(data.players); });
-    function updateWaitList(ps) { document.getElementById('player-list-wait').innerText = "プレイヤー: " + ps.join(', '); }
+    function updateWaitList(ps) { document.getElementById('player-list-wait').innerText = ps.join(', '); }
 
     function requestCards() { socket.emit('request_initial_cards', {room_id: myRoom}); }
 
@@ -253,7 +258,7 @@
         document.getElementById('consult-box').style.display = 'none';
         document.getElementById('piles-display').style.display = 'block';
         document.getElementById('finish-btn').style.display = 'block';
-        document.getElementById('turn-indicator').style.display = 'block';
+        document.getElementById('turn-indicator').style.display = 'flex';
         document.getElementById('game-info').style.display = 'block';
         updateTurnDisplay(); render();
     });
