@@ -12,8 +12,9 @@
             --my-turn-bg: #2e7d32; 
             --others-turn-bg: #c62828; 
             --bg-dark: #000000;
-            --asc-blue: #4a5d6e; /* イラストに近い落ち着いた青灰色 */
-            --desc-red: #4a5d6e; /* 矢印の色を統一 */
+            --asc-blue: #00d2ff;
+            --desc-red: #ff4b2b;
+            --arrow-white: #ffffff; /* 矢印を見やすく白に設定 */
         }
         
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; font-family: sans-serif; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -26,6 +27,8 @@
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .screen.active { display: flex; }
 
+        #turn-splash { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3.5rem; font-weight: bold; color: #fff; text-shadow: 0 0 20px #2e7d32; z-index: 2500; pointer-events: none; opacity: 0; transition: opacity 0.5s; font-family: 'Potta One', cursive; }
+
         #stamp-btn { position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-size: 1.8rem; color: #333; }
         #stamp-menu { position: fixed; bottom: 85px; right: 20px; background: rgba(255,255,255,0.95); padding: 12px; border-radius: 16px; display: none; grid-template-columns: repeat(2, 1fr); gap: 10px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .stamp-option { padding: 10px; color: #333; font-weight: bold; cursor: pointer; border: 1px solid #ddd; border-radius: 8px; background: #fff; text-align: center; font-family: 'Potta One', cursive; font-size: 0.8rem; white-space: nowrap; }
@@ -34,16 +37,13 @@
         .bubble::after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); border-width: 10px 10px 0; border-style: solid; border-color: #fff transparent transparent; }
         @keyframes float-up { 0% { opacity: 0; transform: translate(-50%, 0); } 10% { opacity: 1; transform: translate(-50%, -20px); } 80% { opacity: 1; transform: translate(-50%, -40px); } 100% { opacity: 0; transform: translate(-50%, -60px); } }
 
-        /* 特徴的な矢印の作成（先端が太くなるデザイン） */
-        .arrow-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 40px; }
-        
-        .custom-arrow { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; position: relative; }
-        .arrow-stem { width: 4px; height: 25px; background-color: var(--asc-blue); }
+        /* 特徴的な矢印：白くはっきりさせる */
+        .arrow-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; }
+        .custom-arrow { width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; position: relative; }
+        .arrow-stem { width: 5px; height: 28px; background-color: var(--arrow-white); box-shadow: 0 0 8px rgba(255,255,255,0.5); }
 
-        /* 上向き矢印 */
-        .asc-arrow-head { border-bottom: 18px solid var(--asc-blue); margin-bottom: -2px; }
-        /* 下向き矢印 */
-        .desc-arrow-head { border-top: 18px solid var(--asc-blue); margin-top: -2px; }
+        .asc-arrow-head { border-bottom: 20px solid var(--arrow-white); margin-bottom: -2px; filter: drop-shadow(0 -2px 5px rgba(255,255,255,0.5)); }
+        .desc-arrow-head { border-top: 20px solid var(--arrow-white); margin-top: -2px; filter: drop-shadow(0 2px 5px rgba(255,255,255,0.5)); }
 
         #result-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #result-screen h2 { font-size: 3.5rem; margin-bottom: 20px; text-shadow: 0 0 20px currentColor; font-family: 'Potta One', cursive; }
@@ -63,37 +63,40 @@
 
         #game-area { width: 100%; height: 100%; display: none; text-align: center; padding-top: 80px; }
         
-        /* 修正版：イラスト通りの配置と形状 */
+        /* 捨て場デザイン：枠の色と配置の修正 */
         #piles-display { 
             display: none; background: var(--felt-green); padding: 25px; 
             border-radius: 40px; border: 3px solid #1a2a24; 
             box-shadow: inset 0 0 60px rgba(0,0,0,0.6), 0 8px 20px rgba(0,0,0,0.8); 
-            margin: 5px auto; width: 95%; max-width: 420px;
+            margin: 5px auto; width: 95%; max-width: 440px;
         }
-        /* 2x2のグリッド、中央に矢印用カラム */
         .piles-grid { 
             display: grid; 
-            grid-template-columns: 1fr 40px 1fr; 
+            grid-template-columns: 140px 40px 140px; /* PCでも中央に矢印が来るよう幅を固定 */
             grid-template-rows: 1fr 1fr; 
             gap: 15px; 
-            align-items: center; 
+            align-items: center;
+            justify-content: center;
         }
 
-        /* 横長の枠 */
         .pile { 
             height: 75px; width: 130px; 
-            border: 2px solid #1a2a24; border-radius: 15px; 
+            border: 3px solid #1a2a24; border-radius: 15px; 
             display: flex; justify-content: center; align-items: center; 
-            background: #ffffff; color: #333; /* イラストに近い白背景 */
+            background: #ffffff; color: #333;
             position: relative; transition: 0.3s; 
         }
+        /* 昇順・降順の色を戻す */
+        .pile.asc { border-color: var(--asc-blue); box-shadow: 0 0 10px rgba(0, 210, 255, 0.3); }
+        .pile.desc { border-color: var(--desc-red); box-shadow: 0 0 10px rgba(255, 75, 43, 0.3); }
         .pile-value { font-size: 2.2rem; font-weight: bold; }
 
         @keyframes soft-glow { 0% { box-shadow: 0 0 0px #fff; } 50% { box-shadow: 0 0 35px #fff; } 100% { box-shadow: 0 0 0px #fff; } }
         .placed-effect { animation: soft-glow 0.8s ease-out; }
 
-        .hand-container { margin-top: 10px; width: 100%; display: flex; flex-direction: column; align-items: center; }
-        #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; max-width: 340px; }
+        .hand-container { margin-top: 5px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .hand-row { display: flex; justify-content: center; gap: 6px; min-height: 72px; }
+        
         .card { width: 48px; height: 72px; background: #fff; color: #000; border-radius: 5px; font-size: 1.3rem; font-weight: bold; display: flex; justify-content: center; align-items: center; box-shadow: 0 3px 6px rgba(0,0,0,0.5); transition: transform 0.1s; touch-action: none; }
         .card-placeholder { width: 48px; height: 72px; }
         .dragging-active { position: fixed; pointer-events: none; z-index: 10000; transform: scale(1.15); opacity: 0.95; box-shadow: 0 10px 20px rgba(0,0,0,0.6); }
@@ -107,6 +110,7 @@
 <body oncontextmenu="return false;">
 
 <div id="splash"><h1>THE GAME<br>ONLINE</h1></div>
+<div id="turn-splash">あなたのターン</div>
 <div id="clear-notice">CLEAR</div>
 
 <div id="stamp-ui" style="display:none;">
@@ -154,19 +158,19 @@
 
     <div id="piles-display">
         <div class="piles-grid">
-            <div id="a1" class="pile" onclick="sendSignal('a1')"><div class="pile-value">1</div></div>
+            <div id="a1" class="pile asc" onclick="sendSignal('a1')"><div class="pile-value">1</div></div>
             <div class="arrow-container">
                 <div class="custom-arrow asc-arrow-head"></div>
                 <div class="arrow-stem"></div>
             </div>
-            <div id="a2" class="pile" onclick="sendSignal('a2')"><div class="pile-value">1</div></div>
+            <div id="a2" class="pile asc" onclick="sendSignal('a2')"><div class="pile-value">1</div></div>
 
-            <div id="d1" class="pile" onclick="sendSignal('d1')"><div class="pile-value">100</div></div>
+            <div id="d1" class="pile desc" onclick="sendSignal('d1')"><div class="pile-value">100</div></div>
             <div class="arrow-container">
                 <div class="arrow-stem"></div>
                 <div class="custom-arrow desc-arrow-head"></div>
             </div>
-            <div id="d2" class="pile" onclick="sendSignal('d2')"><div class="pile-value">100</div></div>
+            <div id="d2" class="pile desc" onclick="sendSignal('d2')"><div class="pile-value">100</div></div>
         </div>
     </div>
 
@@ -180,7 +184,8 @@
     </div>
 
     <div class="hand-container">
-        <div id="hand"></div>
+        <div id="hand-row-top" class="hand-row"></div>
+        <div id="hand-row-bottom" class="hand-row"></div>
         <button id="finish-btn" class="btn" style="display:none;" onclick="finishTurn()">ターン終了</button>
     </div>
 </div>
@@ -275,7 +280,12 @@
         }
         document.getElementById('turn-indicator').innerText = myTurn ? `あなたのターン (次は ${nextP})` : `${cur}のターン (次は ${nextP})`;
         document.getElementById('turn-indicator').className = myTurn ? 'my-turn' : 'others-turn';
-        if(myTurn) checkGameStatus();
+        if(myTurn) {
+            const sp = document.getElementById('turn-splash');
+            sp.style.opacity = '1';
+            setTimeout(() => sp.style.opacity = '0', 1000);
+            checkGameStatus();
+        }
     }
 
     function checkAllHandsEmpty() { return Object.values(state.playerHands).every(v => v === 0) && state.deckCount === 0; }
@@ -318,25 +328,20 @@
         cardEl.onmousedown = (e) => {
             startDrag(e.clientX, e.clientY);
             window.onmousemove = (me) => updateClonePos(me.clientX, me.clientY);
-            window.onmouseup = (ue) => {
-                endDrag(ue.clientX, ue.clientY);
-                window.onmousemove = null; window.onmouseup = null;
-            };
+            window.onmouseup = (ue) => { endDrag(ue.clientX, ue.clientY); window.onmousemove = null; window.onmouseup = null; };
         };
-
-        cardEl.ontouchstart = (e) => {
-            const t = e.touches[0];
-            startDrag(t.clientX, t.clientY);
-        };
+        cardEl.ontouchstart = (e) => { startDrag(e.touches[0].clientX, e.touches[0].clientY); };
         cardEl.ontouchmove = (e) => updateClonePos(e.touches[0].clientX, e.touches[0].clientY);
         cardEl.ontouchend = (e) => endDrag(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
     }
 
     function attemptPlaceCard(val, pid) {
-        const top = state.piles[pid];
-        const isAsc = pid.startsWith('a');
+        const top = state.piles[pid], isAsc = pid.startsWith('a');
         if((isAsc && (val > top || val == top-10)) || (!isAsc && (val < top || val == top+10))) {
-            state.piles[pid] = val; state.hand[state.hand.indexOf(val)] = null; state.played++;
+            state.piles[pid] = val; 
+            const idx = state.hand.indexOf(val);
+            state.hand[idx] = null;
+            state.played++;
             state.playerHands[myName]--;
             socket.emit('sync_move', { room_id: myRoom, pileId: pid, val: val, name: myName });
             render(); checkGameStatus();
@@ -397,13 +402,21 @@
         }
         document.getElementById('deck-count').innerText = state.deckCount;
         document.getElementById('played-count').innerText = state.played;
-        const h = document.getElementById('hand'); h.innerHTML = '';
-        state.hand.forEach(v => {
+        
+        const rowTop = document.getElementById('hand-row-top');
+        const rowBottom = document.getElementById('hand-row-bottom');
+        rowTop.innerHTML = ''; rowBottom.innerHTML = '';
+
+        let topCount = 4;
+        if(state.hand.length === 6) topCount = 3;
+
+        state.hand.forEach((v, i) => {
             const d = document.createElement('div');
-            if(v===null) d.className='card-placeholder';
-            else { d.className='card'; d.innerText=v; initDragEvents(d, v); }
-            h.appendChild(d);
+            if(v === null) d.className = 'card-placeholder';
+            else { d.className = 'card'; d.innerText = v; initDragEvents(d, v); }
+            if(i < topCount) rowTop.appendChild(d); else rowBottom.appendChild(d);
         });
+
         const fb = document.getElementById('finish-btn'), min = state.deckCount > 0 ? 2 : 1;
         if(state.played >= min && myTurn) fb.classList.add('glow'); else fb.classList.remove('glow');
     }
@@ -418,9 +431,10 @@
     socket.on('receive_drawn_cards', data => {
         state.deckCount = data.deck_count;
         if(data.player_name === myName) {
-            let dIdx = 0;
-            state.hand = state.hand.map(v => (v === null && dIdx < data.cards.length) ? data.cards[dIdx++] : v).sort((a,b)=>a?b?a-b:-1:1);
-            state.played = 0; state.playerHands[myName] = state.hand.filter(v => v !== null).length;
+            let existing = state.hand.filter(v => v !== null);
+            let combined = [...existing, ...data.cards].sort((a,b) => a-b);
+            state.hand = combined;
+            state.played = 0; state.playerHands[myName] = state.hand.length;
             currentIdx = (currentIdx + 1) % turnOrder.length;
             socket.emit('next_turn', { room_id: myRoom, nextIdx: currentIdx });
             updateTurnDisplay(); render();
