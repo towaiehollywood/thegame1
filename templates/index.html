@@ -15,7 +15,6 @@
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .screen.active { display: flex; }
 
-        /* ターン開始時のデカ文字演出 */
         #turn-splash { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; font-weight: bold; color: white; text-shadow: 0 0 20px #2e7d32; z-index: 1500; pointer-events: none; opacity: 0; transition: opacity 0.5s; }
 
         .btn { background: #333; color: white; border: 1px solid white; padding: 12px 25px; margin: 10px; font-size: 1.1rem; width: 220px; cursor: pointer; border-radius: 4px; }
@@ -32,7 +31,6 @@
         .pile.desc { border-color: #ff3c00; }
         .pile-value { font-size: 2rem; font-weight: bold; }
 
-        /* 置いた瞬間のエフェクト */
         @keyframes place-flash { 0% { background: #fff; transform: scale(1.1); } 100% { background: #222; transform: scale(1); } }
         .placed-effect { animation: place-flash 0.4s ease-out; }
 
@@ -52,7 +50,7 @@
 <body oncontextmenu="return false;">
 
 <div id="splash"><h1>ザ・ゲーム<br>ONLINE</h1></div>
-<div id="turn-splash">自分のターン</div>
+<div id="turn-splash">あなたのターン</div>
 
 <div id="name-screen" class="screen">
     <p>名前を入力してください</p>
@@ -61,7 +59,7 @@
 </div>
 
 <div id="menu-screen" class="screen active">
-    <h1>THE GAME</h1>
+    <h1 style="margin-bottom: 30px;">THE GAME</h1>
     <button class="btn" onclick="createRoom()">部屋を作る</button>
     <button class="btn" onclick="showScreen('join-screen')">部屋に入る</button>
 </div>
@@ -77,7 +75,8 @@
     <button class="btn-back" onclick="location.reload()">戻る</button>
     <h2 id="room-id-val"></h2>
     <div id="player-list-wait"></div>
-    <div id="host-area" style="display:none;"><button class="btn" onclick="requestCards()">始める</button></div>
+    <div id="host-area" style="display:none;"><button class="btn" style="background:#2e7d32;" onclick="requestCards()">始める</button></div>
+    <p id="guest-msg">ホストが開始するのを待っています...</p>
 </div>
 
 <div id="game-area">
@@ -92,8 +91,12 @@
     </div>
 
     <div id="consult-box" style="display:none;">
-        <div id="consult-list"></div>
-        <div id="host-setup" style="display:none;"><input type="number" id="first-num" placeholder="最初の人の数字"><button class="btn" onclick="confirmStart()">決定</button></div>
+        <h3 style="margin:0;">相談フェーズ</h3>
+        <div id="consult-list" style="margin:10px 0;"></div>
+        <div id="host-setup" style="display:none;">
+            <input type="number" id="first-num" placeholder="最初の人の数字">
+            <button class="btn" style="width:100%; margin:0;" onclick="confirmStart()">決定</button>
+        </div>
     </div>
 
     <div class="hand-container">
@@ -110,14 +113,17 @@
 
     window.onload = () => { setTimeout(() => { document.getElementById('splash').style.display = 'none'; if(!myName) showScreen('name-screen'); else showMenu(); }, 1000); };
     function showScreen(id) { document.querySelectorAll('.screen, #game-area').forEach(s => s.style.display = 'none'); document.getElementById(id).style.display = (id==='game-area'?'block':'flex'); }
-    function saveName() { myName = document.getElementById('name-input').value.trim(); if(myName){ localStorage.setItem('thegame_name', myName); showMenu(); } }
-    function showMenu() { showScreen('menu-screen'); }
+    function saveName() { const v = document.getElementById('name-input').value.trim(); if(v){ myName = v; localStorage.setItem('thegame_name', v); showMenu(); } }
+    function showMenu() { document.getElementById('display-name').innerText = myName; showScreen('menu-screen'); }
+    function changeName() { showScreen('name-screen'); }
+
     function createRoom() { isHost = true; socket.emit('create_room', {name: myName}); }
     function joinRoom() { myRoom = document.getElementById('room-input').value; if(myRoom) socket.emit('join_room', {room_id: myRoom, name: myName}); }
     
-    socket.on('room_created', data => { myRoom = data.room_id; document.getElementById('room-id-val').innerText = "部屋: "+data.room_id; showWaitScreen(data.players); document.getElementById('host-area').style.display='block'; });
-    socket.on('player_joined', data => { showWaitScreen(data.players); });
-    function showWaitScreen(ps) { showScreen('wait-screen'); document.getElementById('player-list-wait').innerText = ps.join(', '); }
+    socket.on('room_created', data => { myRoom = data.room_id; document.getElementById('room-id-val').innerText = "部屋: "+data.room_id; updateWaitList(data.players); document.getElementById('host-area').style.display='block'; document.getElementById('guest-msg').style.display='none'; showScreen('wait-screen'); });
+    socket.on('player_joined', data => { updateWaitList(data.players); });
+    function updateWaitList(ps) { document.getElementById('player-list-wait').innerText = "プレイヤー: " + ps.join(', '); }
+
     function requestCards() { socket.emit('request_initial_cards', {room_id: myRoom}); }
 
     socket.on('distribute_initial_cards', data => {
@@ -125,11 +131,16 @@
         state.deckCount = data.deck_count;
         state.hand = data.hands[myName].sort((a,b)=>a-b);
         state.maxHand = data.num_players==2?7:(data.num_players>=3?6:8);
-        document.getElementById('consult-box').style.display = 'block';
         consultNames = Object.keys(data.hands);
-        document.getElementById('consult-list').innerHTML = consultNames.map((n,i)=>`${i+1}. ${n}`).join('<br>');
-        if(isHost && data.num_players>1) document.getElementById('host-setup').style.display='block';
-        else if(data.num_players===1) confirmStart(1);
+        
+        // 1人プレイなら即開始、複数人なら相談画面
+        if(data.num_players === 1) {
+            confirmStart(1);
+        } else {
+            document.getElementById('consult-box').style.display = 'block';
+            document.getElementById('consult-list').innerHTML = consultNames.map((n,i)=>`${i+1}. ${n}`).join('<br>');
+            if(isHost) document.getElementById('host-setup').style.display='block';
+        }
         render();
     });
 
@@ -184,6 +195,8 @@
         render();
     });
 
+    socket.on('update_deck_count', data => { state.deckCount = data.deck_count; render(); });
+
     function render() {
         for(let k in state.piles) document.querySelector(`#${k} .pile-value`).innerText = state.piles[k];
         document.getElementById('deck-count').innerText = state.deckCount;
@@ -196,19 +209,20 @@
             h.appendChild(d);
         });
         const fb = document.getElementById('finish-btn'), min = state.deckCount>0?2:1;
-        fb.className = (state.played >= min) ? 'btn glow' : 'btn';
+        if(state.played >= min && myTurn) fb.classList.add('glow'); else fb.classList.remove('glow');
     }
 
     function finishTurn() {
-        if(state.played < (state.deckCount>0?2:1)) return;
+        const min = state.deckCount>0?2:1;
+        if(state.played < min || !myTurn) return;
         const drawCount = state.hand.filter(v=>v===null).length;
         socket.emit('draw_cards', {room_id: myRoom, count: drawCount});
     }
 
     socket.on('receive_drawn_cards', data => {
         state.deckCount = data.deck_count;
-        let drawnIdx = 0;
-        state.hand = state.hand.map(v => (v === null && drawnIdx < data.cards.length) ? data.cards[drawnIdx++] : v).sort((a,b)=>a?b?a-b:-1:1);
+        let dIdx = 0;
+        state.hand = state.hand.map(v => (v === null && dIdx < data.cards.length) ? data.cards[dIdx++] : v).sort((a,b)=>a?b?a-b:-1:1);
         state.played = 0; currentIdx = (currentIdx + 1) % turnOrder.length;
         socket.emit('next_turn', {room_id: myRoom, nextIdx: currentIdx});
         updateTurnDisplay(); render();
