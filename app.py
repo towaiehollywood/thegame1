@@ -1,76 +1,105 @@
 import os
 import random
 from flask import Flask, render_template, request
-from flask_socketio import SocketIO, join_room, emit
+from flask_socketio import SocketIO, join_room, emit, leave_room
 
 app = Flask(__name__)
-# セキュリティのためのキー設定
-app.config['SECRET_KEY'] = 'the-game-secret-key-12345'
-
-# SocketIOの初期化。Renderなどの外部サーバーで動かすためにcorsを許可します
+app.config['SECRET_KEY'] = 'the-game-secure-key-2026'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# サーバー側で全ルームの状態を管理
+# サーバー側で状態を管理
 rooms = {}
 
 @app.route('/')
 def index():
-    """メイン画面（index.html）を表示"""
     return render_template('index.html')
 
 @socketio.on('create_room')
-def on_create():
-    """新しい部屋を作成し、作成者をホストとして登録"""
+def on_create(data):
     room_id = str(random.randint(1000, 9999))
-    # すでに存在する部屋番号を避ける
     while room_id in rooms:
         room_id = str(random.randint(1000, 9999))
     
     rooms[room_id] = {
-        "players": [request.sid],
+        "players": {request.sid: data['name']},
         "host": request.sid,
         "started": False,
-        "piles": {"a1": 1, "a2": 1, "d1": 100, "d2": 100}
+        "order": [],
+        "current_idx": 0,
+        "deck": []
     }
     join_room(room_id)
-    # 部屋ができたことを本人に通知
-    emit('room_created', {"room_id": room_id, "player_count": 1})
+    emit('room_created', {"room_id": room_id, "players": list(rooms[room_id]["players"].values())})
 
 @socketio.on('join_room')
 def on_join(data):
-    """既存の部屋に合流"""
     room_id = data.get('room_id')
+    name = data.get('name')
     if room_id in rooms:
         if rooms[room_id]["started"]:
-            emit('error', {"message": "そのゲームは既に開始されています。"})
+            emit('error', {"message": "既に開始されています。"})
             return
-        
         join_room(room_id)
-        rooms[room_id]["players"].append(request.sid)
-        # 部屋にいる全員に人数が増えたことを通知
-        emit('player_joined', {"player_count": len(rooms[room_id]["players"])}, room=room_id)
+        rooms[room_id]["players"][request.sid] = name
+        emit('player_joined', {"players": list(rooms[room_id]["players"].values())}, room=room_id)
     else:
-        emit('error', {"message": "部屋番号が見つかりません。"})
+        emit('error', {"message": "部屋が見つかりません。"})
 
-@socketio.on('start_game')
-def on_start(data):
-    """ホストが開始ボタンを押した時の処理"""
+@socketio.on('request_initial_cards')
+def on_request_cards(data):
     room_id = data.get('room_id')
     if room_id in rooms and rooms[room_id]["host"] == request.sid:
-        rooms[room_id]["started"] = True
+        # デッキ作成(2-99)
+        deck = list(range(2, 100))
+        random.shuffle(deck)
         num_players = len(rooms[room_id]["players"])
-        # 全員にゲーム開始を合図（人数情報を送る）
-        emit('game_started', {"num_players": num_players}, room=room_id)
+        max_hand = 7 if num_players == 2 else (6 if num_players >= 3 else 8)
+        
+        hands = {}
+        for sid, name in rooms[room_id]["players"].items():
+            hands[name] = [deck.pop() for _ in range(max_hand)]
+        
+        rooms[room_id]["deck"] = deck
+        emit('distribute_initial_cards', {
+            "hands": hands, 
+            "deck": deck, 
+            "num_players": num_players
+        }, room=room_id)
+
+@socketio.on('confirm_first_player')
+def on_confirm(data):
+    room_id = data.get('room_id')
+    first_player = data.get('firstPlayer')
+    if room_id in rooms:
+        player_names = list(rooms[room_id]["players"].values())
+        if first_player not in player_names:
+            emit('error', {"message": "その名前のプレイヤーはいません。"})
+            return
+        
+        # 順番決定：指定の人を先頭に、残りをシャッフル
+        others = [n for n in player_names if n != first_player]
+        random.shuffle(others)
+        order = [first_player] + others
+        rooms[room_id]["order"] = order
+        rooms[room_id]["started"] = True
+        emit('start_game_with_order', {"order": order}, room=room_id)
+
+@socketio.on('next_turn')
+def on_next(data):
+    emit('update_turn', {"nextIdx": data['nextIdx']}, room=data['room_id'], include_self=False)
 
 @socketio.on('sync_move')
 def on_sync(data):
-    """カードが置かれた動きを他のプレイヤーに同期"""
-    room_id = data.get('room_id')
-    # 置いた本人以外にデータを送信して、盤面を更新させる
-    emit('update_board', data, room=room_id, include_self=False)
+    emit('update_board', data, room=data['room_id'], include_self=False)
+
+@socketio.on('send_signal')
+def on_signal(data):
+    emit('receive_signal', data, room=data['room_id'], include_self=False)
+
+@socketio.on('leave_room')
+def on_leave(data):
+    leave_room(data.get('room_id'))
 
 if __name__ == '__main__':
-    # Render環境ではPORT環境変数が指定されるため、それに従う
     port = int(os.environ.get("PORT", 5000))
-    # 外部アクセスを許可するために host='0.0.0.0' を指定
     socketio.run(app, host='0.0.0.0', port=port)
