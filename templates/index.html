@@ -6,7 +6,6 @@
     <title>THE GAME - Online</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        /* UIデザインは維持します */
         @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700&display=swap');
         :root { --bg-color: #000000; --accent-color: #ffffff; --asc-glow: rgba(0, 140, 255, 0.4); --desc-glow: rgba(255, 60, 0, 0.4); }
         * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; font-family: 'Shippori Mincho B1', serif; }
@@ -16,6 +15,7 @@
         .screen.active { display: flex; }
         .btn { background: transparent; color: white; border: 1px solid white; padding: 12px 25px; margin: 10px; font-size: 1.1rem; width: 220px; cursor: pointer; transition: 0.3s; text-transform: uppercase; }
         .btn:active { background: white; color: black; }
+        .btn:disabled { border-color: #444; color: #444; cursor: not-allowed; }
         .btn-start { border: 2px solid #fff; background: rgba(255,255,255,0.1); display: none; }
         .btn-back { position: absolute; top: 25px; left: 20px; width: auto; padding: 5px 15px; font-size: 0.85rem; border: 1px solid #666; color: #aaa; background: rgba(255, 255, 255, 0.05); border-radius: 4px; }
         input { background: #111; color: white; border: 1px solid white; padding: 10px; font-size: 1.5rem; width: 150px; text-align: center; margin-bottom: 20px; }
@@ -46,7 +46,7 @@
         <button class="btn btn-back" onclick="backToMenu()">← 戻る</button>
         <p>穿界門の鍵 (部屋番号)</p>
         <input type="number" id="room-input" pattern="\d*">
-        <button class="btn" onclick="joinRoom()">入る</button>
+        <button id="join-confirm-btn" class="btn" onclick="joinRoom()">入る</button>
     </div>
 
     <div id="wait-screen" class="screen">
@@ -82,11 +82,14 @@
             document.getElementById('menu-screen').classList.add('active');
             myRoom = null;
             isHost = false;
-            // 入力欄もリセット
             document.getElementById('room-input').value = "";
+            document.getElementById('join-confirm-btn').disabled = false;
         }
 
-        function createRoom() { isHost = true; socket.emit('create_room'); }
+        function createRoom() {
+            isHost = true;
+            socket.emit('create_room');
+        }
         
         function showJoinInput() { 
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -96,10 +99,15 @@
         function joinRoom() {
             const id = document.getElementById('room-input').value;
             if(!id) { alert("番号を入力してください"); return; }
-            myRoom = id; // 先にmyRoomに入れておく
+            
+            // ボタンを無効化して連打を防ぐ
+            document.getElementById('join-confirm-btn').disabled = true;
+            
+            myRoom = id;
+            // サーバーに送る
             socket.emit('join_room', { room_id: id });
-            // 送信と同時に待機画面に切り替える
-            showWaitScreen(id, "..."); 
+            // 即座に画面を切り替える
+            showWaitScreen(id, "通信中..."); 
         }
 
         socket.on('room_created', (data) => {
@@ -189,7 +197,7 @@
         }
         socket.on('error', (data) => {
             alert(data.message);
-            backToMenu(); // エラー時はメニューに戻す
+            backToMenu();
         });
     </script>
 </body>
