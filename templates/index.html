@@ -14,25 +14,8 @@
         }
         
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; font-family: sans-serif; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-        
-        /* モバイル版の背景色をPCと統一 */
-        html, body { 
-            margin: 0; 
-            padding: 0; 
-            height: 100%; 
-            width: 100%; 
-            overflow: hidden; 
-            position: fixed;
-            background-color: var(--bg-dark); /* 背景色を黒に固定 */
-        }
-        
-        body { 
-            background: radial-gradient(circle, #1a1a1a 0%, #000 100%); 
-            color: white; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-        }
+        html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; position: fixed; background-color: var(--bg-dark); }
+        body { background: radial-gradient(circle, #1a1a1a 0%, #000 100%); color: white; display: flex; flex-direction: column; align-items: center; }
 
         #splash { position: fixed; inset: 0; background: black; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; transition: opacity 1s; }
         #splash h1 { font-size: 2.5rem; text-align: center; margin: 0; line-height: 1.2; letter-spacing: 0.3rem; }
@@ -40,66 +23,32 @@
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .screen.active { display: flex; }
 
-        #user-info-area { position: absolute; top: 20px; left: 20px; font-size: 0.9rem; border-bottom: 1px solid #666; cursor: pointer; padding: 5px; z-index: 100; }
+        #result-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        #result-screen h2 { font-size: 3.5rem; margin-bottom: 20px; text-shadow: 0 0 20px currentColor; }
+        .perfect { color: #00ff00; }
+        .win { color: #f1c40f; }
+        .lose { color: #e74c3c; }
 
+        #clear-notice { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #f1c40f; text-shadow: 0 0 20px #000; z-index: 2500; pointer-events: none; opacity: 0; transition: opacity 0.5s; }
+
+        #user-info-area { position: absolute; top: 20px; left: 20px; font-size: 0.9rem; border-bottom: 1px solid #666; cursor: pointer; padding: 5px; z-index: 100; }
         .btn { background: #333; color: white; border: 1px solid white; padding: 12px 25px; margin: 10px; font-size: 1.1rem; width: 220px; cursor: pointer; border-radius: 4px; }
         .btn-back { position: absolute; top: 20px; left: 20px; width: auto; padding: 8px 15px; font-size: 0.9rem; border: 1px solid white; background: #333; z-index: 100; }
         input { background: #000; color: white; border: 1px solid white; padding: 10px; font-size: 1.2rem; width: 220px; text-align: center; margin-bottom: 15px; -webkit-user-select: auto; user-select: auto; }
 
-        #turn-indicator { 
-            width: 100%; 
-            padding: 10px; 
-            font-weight: bold; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            z-index: 10; 
-            display: none; 
-            font-size: 0.9rem; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5); 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+        #turn-indicator { width: 100%; padding: 10px; font-weight: bold; position: fixed; top: 0; left: 0; z-index: 10; display: none; font-size: 0.9rem; box-shadow: 0 2px 10px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
         .my-turn { background: var(--my-turn-bg); }
         .others-turn { background: var(--others-turn-bg); }
 
-        /* 山札・枚数表記を大きく */
-        #game-info { 
-            font-size: 1.1rem; 
-            font-weight: bold;
-            color: #ffffff; 
-            position: fixed; 
-            top: 45px; 
-            width: 100%; 
-            text-align: center; 
-            display: none; 
-            text-shadow: 0 0 5px rgba(0,0,0,1);
-            z-index: 5;
-        }
+        #game-info { font-size: 1.1rem; font-weight: bold; color: #ffffff; position: fixed; top: 45px; width: 100%; text-align: center; display: none; text-shadow: 0 0 5px rgba(0,0,0,1); z-index: 5; }
         #game-info span { color: #2ed573; font-size: 1.3rem; margin: 0 5px; }
 
         #game-area { width: 100%; height: 100%; display: none; text-align: center; padding-top: 80px; }
-        
-        #piles-display { 
-            display: none; 
-            background: var(--felt-green); 
-            padding: 15px; 
-            border-radius: 15px; 
-            border: 4px solid #4a3000; 
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.5), 0 5px 15px rgba(0,0,0,0.8);
-            margin: 5px auto;
-            width: fit-content;
-        }
-
+        #piles-display { display: none; background: var(--felt-green); padding: 15px; border-radius: 15px; border: 4px solid #4a3000; box-shadow: inset 0 0 50px rgba(0,0,0,0.5), 0 5px 15px rgba(0,0,0,0.8); margin: 5px auto; width: fit-content; }
         .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; justify-content: center; }
         .pile-wrapper { display: flex; align-items: center; gap: 4px; }
         .arrow { font-size: 1.1rem; font-weight: bold; color: rgba(255,255,255,0.6); }
-
-        .pile { 
-            height: 90px; width: 75px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; 
-            display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.3); position: relative; transition: 0.3s; 
-        }
+        .pile { height: 90px; width: 75px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.3); position: relative; transition: 0.3s; }
         .pile.asc { border-color: #008cff; }
         .pile.desc { border-color: #ff3c00; }
         .pile-value { font-size: 1.8rem; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
@@ -113,18 +62,20 @@
         .card-placeholder { width: 46px; height: 68px; }
 
         #finish-btn.glow { animation: soft-glow 2s infinite; border-color: #fff; }
-
         #consult-box { background: rgba(0,0,0,0.6); padding: 15px; border-radius: 12px; margin: 0 auto 10px; width: 90%; max-width: 400px; border: 1px solid #444; }
-        #consult-list { text-align: center; margin: 10px 0; font-size: 1.2rem; line-height: 1.8; }
-
         @keyframes moya { 0%, 100% { box-shadow: 0 0 5px #fff; } 50% { box-shadow: 0 0 25px #fff; } }
         .signal-glow { animation: moya 0.5s infinite; border-color: #fff !important; }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
-<div id="splash">
-    <h1>THE GAME<br>ONLINE</h1>
+<div id="splash"><h1>THE GAME<br>ONLINE</h1></div>
+<div id="clear-notice">CLEAR</div>
+
+<div id="result-screen">
+    <h2 id="result-text"></h2>
+    <p id="result-subtext" style="margin-bottom: 30px;"></p>
+    <button class="btn" onclick="location.reload()">メニューに戻る</button>
 </div>
 
 <div id="name-screen" class="screen">
@@ -161,16 +112,16 @@
 
     <div id="piles-display">
         <div class="piles-container">
-            <div class="pile-wrapper"><div class="arrow">↑</div><div id="a1" class="pile asc" onclick="sendSignal('a1')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a1')"><div class="pile-value">1</div></div><div class="arrow">↑</div></div>
-            <div class="pile-wrapper"><div class="arrow">↑</div><div id="a2" class="pile asc" onclick="sendSignal('a2')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a2')"><div class="pile-value">1</div></div><div class="arrow">↑</div></div>
-            <div class="pile-wrapper"><div class="arrow">↓</div><div id="d1" class="pile desc" onclick="sendSignal('d1')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'd1')"><div class="pile-value">100</div></div><div class="arrow">↓</div></div>
-            <div class="pile-wrapper"><div class="arrow">↓</div><div id="d2" class="pile desc" onclick="sendSignal('d2')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'd2')"><div class="pile-value">100</div></div><div class="arrow">↓</div></div>
+            <div class="pile-wrapper"><div class="arrow">↑</div><div id="a1" class="pile asc" onclick="sendSignal('a1')"><div class="pile-value">1</div></div><div class="arrow">↑</div></div>
+            <div class="pile-wrapper"><div class="arrow">↑</div><div id="a2" class="pile asc" onclick="sendSignal('a2')"><div class="pile-value">1</div></div><div class="arrow">↑</div></div>
+            <div class="pile-wrapper"><div class="arrow">↓</div><div id="d1" class="pile desc" onclick="sendSignal('d1')"><div class="pile-value">100</div></div><div class="arrow">↓</div></div>
+            <div class="pile-wrapper"><div class="arrow">↓</div><div id="d2" class="pile desc" onclick="sendSignal('d2')"><div class="pile-value">100</div></div><div class="arrow">↓</div></div>
         </div>
     </div>
 
     <div id="consult-box" style="display:none;">
         <h3 style="margin:0;">相談フェーズ</h3>
-        <div id="consult-list"></div>
+        <div id="consult-list" style="margin:10px 0;"></div>
         <div id="host-setup" style="display:none;">
             <input type="number" id="first-num" placeholder="最初の人の数字">
             <button class="btn" style="width:100%; margin:0;" onclick="confirmStart()">決定</button>
@@ -179,7 +130,7 @@
 
     <div class="hand-container">
         <div id="hand"></div>
-        <button id="finish-btn" class="btn" style="display:none; margin-top: 10px;" onclick="finishTurn()">ターン終了</button>
+        <button id="finish-btn" class="btn" style="display:none;" onclick="finishTurn()">ターン終了</button>
     </div>
 </div>
 
@@ -187,47 +138,21 @@
     const socket = io();
     let myName = localStorage.getItem('thegame_name') || "";
     let myRoom = null, isHost = false, myTurn = false, turnOrder = [], currentIdx = -1, consultNames = [];
-    let state = { deckCount: 0, hand: [], piles: {a1:1, a2:1, d1:100, d2:100}, played: 0, maxHand: 8, draggedValue: null };
+    let state = { deckCount: 0, hand: [], piles: {a1:1, a2:1, d1:100, d2:100}, played: 0, maxHand: 8, draggedValue: null, playerHands: {} };
+    let clearNotified = false;
 
     window.onload = () => { setTimeout(() => { document.getElementById('splash').style.opacity = '0'; setTimeout(() => { document.getElementById('splash').style.display = 'none'; if(!myName) showScreen('name-screen'); else showMenu(); }, 1000); }, 1000); };
-    
-    function showScreen(id) { 
-        document.querySelectorAll('.screen, #game-area').forEach(s => s.style.display = 'none'); 
-        const target = document.getElementById(id);
-        if(id==='game-area') target.style.display = 'block'; else target.style.display = 'flex';
-    }
-
-    function saveName() { 
-        const v = document.getElementById('name-input').value.trim(); 
-        if(v){ myName = v; localStorage.setItem('thegame_name', v); showMenu(); } 
-    }
-    
+    function showScreen(id) { document.querySelectorAll('.screen, #game-area').forEach(s => s.style.display = 'none'); document.getElementById(id).style.display = (id==='game-area'?'block':'flex'); }
+    function saveName() { const v = document.getElementById('name-input').value.trim(); if(v){ myName = v; localStorage.setItem('thegame_name', v); showMenu(); } }
     function showMenu() { document.getElementById('display-name').innerText = myName; showScreen('menu-screen'); }
     function changeName() { showScreen('name-screen'); }
 
     function createRoom() { isHost = true; socket.emit('create_room', {name: myName}); }
+    function joinRoom() { myRoom = document.getElementById('room-input').value; if(myRoom) { isHost = false; socket.emit('join_room', {room_id: myRoom, name: myName}); document.getElementById('room-id-val').innerText = "部屋: " + myRoom; showScreen('wait-screen'); } }
     
-    function joinRoom() { 
-        myRoom = document.getElementById('room-input').value; 
-        if(myRoom) {
-            isHost = false;
-            socket.emit('join_room', {room_id: myRoom, name: myName}); 
-            document.getElementById('room-id-val').innerText = "部屋: " + myRoom;
-            showScreen('wait-screen');
-        }
-    }
-    
-    socket.on('room_created', data => { 
-        myRoom = data.room_id; 
-        document.getElementById('room-id-val').innerText = "部屋: "+data.room_id; 
-        updateWaitList(data.players); 
-        document.getElementById('host-area').style.display='block'; 
-        document.getElementById('guest-msg').style.display='none'; 
-        showScreen('wait-screen'); 
-    });
-
+    socket.on('room_created', data => { myRoom = data.room_id; document.getElementById('room-id-val').innerText = "部屋: "+data.room_id; updateWaitList(data.players); document.getElementById('host-area').style.display='block'; document.getElementById('guest-msg').style.display='none'; showScreen('wait-screen'); });
     socket.on('player_joined', data => { updateWaitList(data.players); });
-    function updateWaitList(ps) { document.getElementById('player-list-wait').innerText = ps.join(', '); }
+    function updateWaitList(ps) { document.getElementById('player-list-wait').innerText = "プレイヤー: " + ps.join(', '); }
 
     function requestCards() { socket.emit('request_initial_cards', {room_id: myRoom}); }
 
@@ -237,11 +162,10 @@
         state.hand = data.hands[myName].sort((a,b)=>a-b);
         state.maxHand = data.num_players==2?7:(data.num_players>=3?6:8);
         consultNames = data.player_list;
-        
+        for(let name in data.hands) { state.playerHands[name] = data.hands[name].length; }
         document.getElementById('piles-display').style.display = 'none';
         document.getElementById('consult-box').style.display = 'block';
         document.getElementById('consult-list').innerHTML = consultNames.map((n,i)=>`${i+1}. ${n}`).join('<br>');
-        
         if(isHost) document.getElementById('host-setup').style.display='block';
         if(data.num_players === 1) confirmStart(1);
         render();
@@ -250,7 +174,7 @@
     function confirmStart(n) { 
         let idx = n || document.getElementById('first-num').value;
         if(!idx || idx < 1 || idx > consultNames.length) return;
-        socket.emit('confirm_first_player', {room_id: myRoom, firstPlayer: consultNames[idx-1]});
+        socket.emit('confirm_first_player', { room_id: myRoom, firstPlayer: consultNames[idx-1] });
     }
 
     socket.on('start_game_with_order', data => {
@@ -265,13 +189,28 @@
 
     function updateTurnDisplay() {
         const cur = turnOrder[currentIdx];
-        const next = turnOrder[(currentIdx + 1) % turnOrder.length];
         myTurn = (cur === myName);
-        document.getElementById('turn-indicator').innerText = myTurn ? `あなたのターン (次は ${next})` : `${cur}のターン (次は ${next})`;
+        if(state.playerHands[cur] === 0) {
+            if(checkAllHandsEmpty()) return;
+            currentIdx = (currentIdx + 1) % turnOrder.length;
+            updateTurnDisplay();
+            return;
+        }
+        const nextIdx = (currentIdx + 1) % turnOrder.length;
+        let nextP = turnOrder[nextIdx];
+        let loopGuard = 0;
+        while(state.playerHands[nextP] === 0 && loopGuard < turnOrder.length) {
+            nextP = turnOrder[(nextIdx + loopGuard + 1) % turnOrder.length];
+            loopGuard++;
+        }
+        document.getElementById('turn-indicator').innerText = myTurn ? `あなたのターン (次は ${nextP})` : `${cur}のターン (次は ${nextP})`;
         document.getElementById('turn-indicator').className = myTurn ? 'my-turn' : 'others-turn';
+        if(myTurn) checkGameStatus();
     }
 
-    function sendSignal(pid) { socket.emit('send_signal', {room_id: myRoom, pileId: pid}); }
+    function checkAllHandsEmpty() { return Object.values(state.playerHands).every(v => v === 0) && state.deckCount === 0; }
+
+    function sendSignal(pid) { socket.emit('send_signal', { room_id: myRoom, pileId: pid }); }
     socket.on('receive_signal', data => {
         const p = document.getElementById(data.pileId);
         p.classList.add('signal-glow'); setTimeout(() => p.classList.remove('signal-glow'), 1500);
@@ -282,21 +221,88 @@
         if(!myTurn || state.draggedValue === null) return;
         const val = state.draggedValue, top = state.piles[pid], isAsc = pid.startsWith('a');
         if((isAsc && (val > top || val == top-10)) || (!isAsc && (val < top || val == top+10))) {
-            state.piles[pid] = val; state.hand[state.hand.indexOf(val)] = null; state.played++;
-            socket.emit('sync_move', {room_id: myRoom, pileId: pid, val: val});
+            state.piles[pid] = val; 
+            state.hand[state.hand.indexOf(val)] = null; 
+            state.played++;
+            state.playerHands[myName]--;
+            socket.emit('sync_move', { room_id: myRoom, pileId: pid, val: val, name: myName });
             render();
+            checkGameStatus();
         }
         state.draggedValue = null;
     }
 
     socket.on('update_board', data => {
         state.piles[data.pileId] = data.val;
+        state.playerHands[data.name]--;
         const p = document.getElementById(data.pileId);
         p.classList.add('placed-effect'); setTimeout(() => p.classList.remove('placed-effect'), 800);
         render();
     });
 
     socket.on('update_deck_count', data => { state.deckCount = data.deck_count; render(); });
+
+    // --- 終了・勝利判定ロジック：最低プレイ枚数の修正 ---
+    function checkGameStatus() {
+        const totalRemaining = getTotalRemaining();
+        const canMove = checkCanMove();
+        
+        // 山札があるときは2枚、ないときは1枚がノルマ
+        const min = state.deckCount > 0 ? 2 : 1; 
+        const turnFinished = state.played >= min;
+
+        if(totalRemaining === 0) {
+            socket.emit('game_end', { room_id: myRoom, type: 'perfect', msg: 'PERFECT CLEAR', sub: '伝説のチームワークです！' });
+            return;
+        }
+
+        if(!canMove && !turnFinished) {
+            if(totalRemaining <= 9) {
+                socket.emit('game_end', { room_id: myRoom, type: 'win', msg: 'CLEAR', sub: '残り' + totalRemaining + '枚！勝利です。' });
+            } else {
+                socket.emit('game_end', { room_id: myRoom, type: 'lose', msg: 'GAME OVER', sub: totalRemaining + '枚残し...再挑戦しましょう' });
+            }
+            return;
+        }
+
+        if(totalRemaining <= 9 && !clearNotified) {
+            showClearNotice();
+            clearNotified = true;
+        }
+    }
+
+    function getTotalRemaining() {
+        const handTotal = Object.values(state.playerHands).reduce((a, b) => a + b, 0);
+        return handTotal + state.deckCount;
+    }
+
+    function checkCanMove() {
+        const hand = state.hand.filter(v => v !== null);
+        for(let val of hand) {
+            for(let pid in state.piles) {
+                const top = state.piles[pid];
+                const isAsc = pid.startsWith('a');
+                if((isAsc && (val > top || val == top-10)) || (!isAsc && (val < top || val == top+10))) return true;
+            }
+        }
+        return false;
+    }
+
+    function showClearNotice() {
+        const el = document.getElementById('clear-notice');
+        el.style.opacity = '1';
+        setTimeout(() => el.style.opacity = '0', 1000);
+    }
+
+    socket.on('receive_game_end', data => {
+        const screen = document.getElementById('result-screen');
+        const text = document.getElementById('result-text');
+        const sub = document.getElementById('result-subtext');
+        text.innerText = data.msg;
+        text.className = data.type;
+        sub.innerText = data.sub;
+        screen.style.display = 'flex';
+    });
 
     function render() {
         for(let k in state.piles) {
@@ -312,24 +318,37 @@
             else { d.className='card'; d.innerText=v; d.draggable=myTurn; d.ondragstart=e=>{ if(myTurn){ state.draggedValue=v; e.dataTransfer.setData("text",v); } }; }
             h.appendChild(d);
         });
-        const fb = document.getElementById('finish-btn'), min = state.deckCount>0?2:1;
+        document.querySelectorAll('.pile').forEach(p => {
+            p.ondrop = (e) => handleDrop(e, p.id);
+            p.ondragover = (e) => e.preventDefault();
+        });
+
+        // ボタンの点灯条件も同様に修正
+        const fb = document.getElementById('finish-btn'), min = state.deckCount > 0 ? 2 : 1;
         if(state.played >= min && myTurn) fb.classList.add('glow'); else fb.classList.remove('glow');
     }
 
     function finishTurn() {
-        const min = state.deckCount>0?2:1;
+        const min = state.deckCount > 0 ? 2 : 1;
         if(state.played < min || !myTurn) return;
         const drawCount = state.hand.filter(v=>v===null).length;
-        socket.emit('draw_cards', {room_id: myRoom, count: drawCount});
+        socket.emit('draw_cards', { room_id: myRoom, count: drawCount, name: myName });
     }
 
     socket.on('receive_drawn_cards', data => {
         state.deckCount = data.deck_count;
-        let dIdx = 0;
-        state.hand = state.hand.map(v => (v === null && dIdx < data.cards.length) ? data.cards[dIdx++] : v).sort((a,b)=>a?b?a-b:-1:1);
-        state.played = 0; currentIdx = (currentIdx + 1) % turnOrder.length;
-        socket.emit('next_turn', {room_id: myRoom, nextIdx: currentIdx});
-        updateTurnDisplay(); render();
+        if(data.player_name === myName) {
+            let dIdx = 0;
+            state.hand = state.hand.map(v => (v === null && dIdx < data.cards.length) ? data.cards[dIdx++] : v).sort((a,b)=>a?b?a-b:-1:1);
+            state.played = 0;
+            state.playerHands[myName] = state.hand.filter(v => v !== null).length;
+            currentIdx = (currentIdx + 1) % turnOrder.length;
+            socket.emit('next_turn', { room_id: myRoom, nextIdx: currentIdx });
+            updateTurnDisplay(); render();
+        } else {
+            state.playerHands[data.player_name] += data.cards.length;
+            render();
+        }
     });
 
     socket.on('update_turn', data => { currentIdx = data.nextIdx; updateTurnDisplay(); render(); });
