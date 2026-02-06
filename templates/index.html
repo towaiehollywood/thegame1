@@ -27,7 +27,7 @@
         #splash-screen { position: fixed; inset: 0; background: black; display: flex; justify-content: center; align-items: center; z-index: 1000; transition: opacity 1s; }
         #splash-screen h1 { font-size: 2rem; text-align: center; }
 
-        .screen { display: none; width: 100%; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; }
+        .screen { display: none; width: 100%; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; position: relative;}
         .screen.active { display: flex; }
 
         #user-name-tag { position: absolute; top: 20px; left: 20px; font-size: 0.9rem; border-bottom: 1px solid #666; cursor: pointer; padding: 2px 5px; }
@@ -36,14 +36,15 @@
         .btn:active { background: white; color: black; }
         .btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
+        /* 戻るボタン：左上に固定 */
+        .btn-back { position: absolute; top: 20px; left: 20px; width: auto; padding: 8px 15px; font-size: 0.9rem; margin: 0; }
+
         input { background: #000; color: white; border: 1px solid white; padding: 10px; font-size: 1.2rem; width: 200px; text-align: center; margin-bottom: 15px; }
 
-        /* ターン表示 */
         #turn-indicator { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; padding: 10px; border-radius: 8px; width: 100%; text-align: center; display: none; }
         .my-turn { background: #2e7d32; }
         .others-turn { background: #c62828; }
 
-        /* ゲーム盤面 */
         #game-area { width: 100%; max-width: 500px; display: none; text-align: center; padding-top: 20px; }
         .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; justify-content: center; margin: 20px auto; width: fit-content; }
         .pile { 
@@ -54,7 +55,6 @@
         .pile.desc { border-color: #ff3c00; }
         .pile-value { font-size: 2rem; font-weight: bold; }
 
-        /* 手札 */
         .hand-container { margin-top: 20px; border-top: 1px solid #444; padding-top: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; }
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 320px; min-height: 80px; }
         .card { width: 50px; height: 75px; background: #fff; color: #000; border-radius: 4px; font-size: 1.3rem; font-weight: bold; display: flex; justify-content: center; align-items: center; }
@@ -79,19 +79,19 @@
     <div id="menu-screen" class="screen">
         <div id="user-name-tag" onclick="changeName()">名前: <span id="my-name-display"></span></div>
         <h1>THE GAME</h1>
-        <button class="btn" onclick="createRoom()">部屋を作る</button>
-        <button class="btn" onclick="showJoinInput()">部屋に入る</button>
+        <button class="btn" id="create-btn" onclick="createRoom()">部屋を作る</button>
+        <button class="btn" id="join-btn" onclick="showJoinInput()">部屋に入る</button>
     </div>
 
     <div id="join-screen" class="screen">
-        <button class="btn" onclick="showScreen('menu-screen')">戻る</button>
+        <button class="btn btn-back" onclick="showScreen('menu-screen')">戻る</button>
         <p>部屋番号</p>
         <input type="number" id="room-input">
         <button id="join-confirm-btn" class="btn" onclick="joinRoom()">参加する</button>
     </div>
 
     <div id="wait-screen" class="screen">
-        <button class="btn" onclick="backToMenu()">離脱する</button>
+        <button class="btn btn-back" onclick="backToMenu()">戻る</button>
         <h2>部屋番号: <span id="display-room-id"></span></h2>
         <div id="player-list" style="margin: 20px 0;"></div>
         
@@ -103,24 +103,20 @@
 
     <div id="game-area">
         <div id="turn-indicator"></div>
-        
         <div class="piles-container">
             <div id="a1" class="pile asc" onclick="sendSignal('a1')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a1')"><div class="pile-value">1</div></div>
             <div id="a2" class="pile asc" onclick="sendSignal('a2')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a2')"><div class="pile-value">1</div></div>
             <div id="d1" class="pile desc" onclick="sendSignal('d1')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'd1')"><div class="pile-value">100</div></div>
             <div id="d2" class="pile desc" onclick="sendSignal('d2')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'd2')"><div class="pile-value">100</div></div>
         </div>
-
         <div class="hand-container">
             <p id="hand-label" style="margin:0 0 10px 0; font-size:0.8rem; color:#888;">自分の手札</p>
             <div id="hand"></div>
-            
             <div id="first-player-setter" style="display:none;">
                 <p style="margin:0 0 10px 0; font-size:0.9rem;">相談して最初のプレイヤーを決めてください</p>
                 <input type="text" id="first-player-input" placeholder="名前を入力">
                 <button class="btn" style="width:100%; margin:0;" onclick="confirmFirstPlayer()">この人から開始！</button>
             </div>
-
             <button id="finish-btn" class="btn" style="display:none;" onclick="finishTurn()">ターン終了</button>
         </div>
     </div>
@@ -145,7 +141,8 @@
         function showScreen(id) {
             document.querySelectorAll('.screen, #game-area').forEach(s => s.style.display = 'none');
             const target = document.getElementById(id);
-            target.style.display = (id === 'game-area') ? 'block' : 'flex';
+            if(id === 'game-area') target.style.display = 'block';
+            else { target.style.display = 'flex'; target.classList.add('active'); }
         }
 
         function saveName() {
@@ -156,8 +153,14 @@
         function showMenu() { document.getElementById('my-name-display').innerText = myName; showScreen('menu-screen'); }
         function changeName() { showScreen('name-screen'); }
 
-        function createRoom() { isHost = true; socket.emit('create_room', { name: myName }); }
+        function createRoom() { 
+            console.log("Creating room...");
+            isHost = true; 
+            socket.emit('create_room', { name: myName }); 
+        }
+
         function showJoinInput() { showScreen('join-screen'); }
+
         function joinRoom() {
             const id = document.getElementById('room-input').value;
             if(id) { myRoom = id; isHost = false; socket.emit('join_room', { room_id: id, name: myName }); }
@@ -181,31 +184,18 @@
 
         function backToMenu() { location.reload(); }
 
-        // --- ステップ1: カードを配って相談フェーズへ ---
-        function requestInitialCards() {
-            socket.emit('request_initial_cards', { room_id: myRoom });
-        }
+        function requestInitialCards() { socket.emit('request_initial_cards', { room_id: myRoom }); }
 
         socket.on('distribute_initial_cards', (data) => {
             showScreen('game-area');
             state.maxHand = (data.num_players === 2) ? 7 : (data.num_players >= 3 ? 6 : 8);
-            
-            // 全員に同じデッキを共有（シード値など本来は必要ですが、今回は簡易化）
             state.deck = data.deck;
-            // 自分の手札を抽出
             state.hand = data.hands[myName].sort((a,b)=>a-b);
-            
             render();
-
-            if (isHost && data.num_players > 1) {
-                document.getElementById('first-player-setter').style.display = 'block';
-            } else if (data.num_players === 1) {
-                // 1人プレイなら即開始
-                confirmFirstPlayer(myName);
-            }
+            if (isHost && data.num_players > 1) document.getElementById('first-player-setter').style.display = 'block';
+            else if (data.num_players === 1) confirmFirstPlayer(myName);
         });
 
-        // --- ステップ2: ホストが最初のプレイヤーを確定 ---
         function confirmFirstPlayer(fixedName) {
             const firstPlayer = fixedName || document.getElementById('first-player-input').value.trim();
             if (!firstPlayer) return alert("名前を入力してください");
@@ -226,15 +216,9 @@
             const currentP = turnOrder[currentTurnIdx];
             const nextP = turnOrder[(currentTurnIdx + 1) % turnOrder.length];
             const indicator = document.getElementById('turn-indicator');
-            
             myTurn = (currentP === myName);
-            if (myTurn) {
-                indicator.innerText = `自分のターン (次: ${nextP})`;
-                indicator.className = 'my-turn';
-            } else {
-                indicator.innerText = `${currentP}のターン (次: ${nextP})`;
-                indicator.className = 'others-turn';
-            }
+            indicator.innerText = myTurn ? `自分のターン (次: ${nextP})` : `${currentP}のターン (次: ${nextP})`;
+            indicator.className = myTurn ? 'my-turn' : 'others-turn';
         }
 
         function sendSignal(pileId) { socket.emit('send_signal', { room_id: myRoom, pileId: pileId }); }
@@ -276,9 +260,9 @@
                 }
                 handEl.appendChild(c);
             });
-            const finishBtn = document.getElementById('finish-btn');
+            const fb = document.getElementById('finish-btn');
             const min = state.deck.length > 0 ? 2 : 1;
-            finishBtn.className = (state.played >= min) ? 'btn' : 'btn disabled';
+            fb.className = (state.played >= min) ? 'btn' : 'btn disabled';
         }
 
         function finishTurn() {
@@ -294,12 +278,7 @@
             updateTurnDisplay();
         }
 
-        socket.on('update_turn', (data) => {
-            currentTurnIdx = data.nextIdx;
-            updateTurnDisplay();
-            render();
-        });
-
+        socket.on('update_turn', (data) => { currentTurnIdx = data.nextIdx; updateTurnDisplay(); render(); });
         socket.on('error', (data) => { alert(data.message); location.reload(); });
     </script>
 </body>
