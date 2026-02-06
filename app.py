@@ -85,12 +85,16 @@ def on_draw(data):
     if room_id in rooms:
         room = rooms[room_id]
         drawn = [room["deck"].pop() for _ in range(min(count, len(room["deck"])))]
-        emit('receive_drawn_cards', {"cards": drawn, "deck_count": len(room["deck"])})
+        emit('receive_drawn_cards', {"cards": drawn, "deck_count": len(room["deck"]), "player_name": data.get('name')})
         emit('update_deck_count', {"deck_count": len(room["deck"])}, room=room_id, include_self=False)
 
 @socketio.on('next_turn')
 def on_next(data):
     emit('update_turn', {"nextIdx": data['nextIdx']}, room=data['room_id'])
+
+@socketio.on('game_end')
+def on_game_end(data):
+    emit('receive_game_end', data, room=data['room_id'])
 
 @socketio.on('send_signal')
 def on_signal(data):
