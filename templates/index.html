@@ -12,6 +12,8 @@
             --my-turn-bg: #2e7d32; 
             --others-turn-bg: #c62828; 
             --bg-dark: #000000;
+            --asc-blue: #00d2ff;
+            --desc-red: #ff4b2b;
         }
         
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; font-family: sans-serif; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -24,23 +26,45 @@
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .screen.active { display: flex; }
 
-        /* スタンプUI：Potta Oneを適用 */
-        #stamp-btn { position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; background: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-size: 1.5rem; color: #333; }
+        /* スタンプUI：2x2のグリッド配置に変更 */
+        #stamp-btn { position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-size: 1.8rem; color: #333; }
         #stamp-menu { 
-            position: fixed; bottom: 80px; right: 20px; background: rgba(255,255,255,0.95); 
-            padding: 8px; border-radius: 12px; display: none; 
-            flex-direction: row; gap: 8px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+            position: fixed; bottom: 85px; right: 20px; background: rgba(255,255,255,0.95); 
+            padding: 12px; border-radius: 16px; display: none; 
+            display: none; grid-template-columns: repeat(2, 1fr); /* 2列配置 */
+            gap: 10px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
         }
         .stamp-option { 
-            padding: 8px 12px; color: #333; font-weight: bold; cursor: pointer; 
+            padding: 10px; color: #333; font-weight: bold; cursor: pointer; 
             border: 1px solid #ddd; border-radius: 8px; background: #fff;
-            white-space: nowrap; font-family: 'Potta One', cursive; font-size: 0.9rem;
+            text-align: center; font-family: 'Potta One', cursive; font-size: 0.8rem;
+            white-space: nowrap;
         }
 
-        /* 吹き出し：Potta Oneを適用 */
-        .bubble { position: fixed; background: #fff; color: #333; padding: 12px 24px; border-radius: 20px; font-weight: bold; z-index: 1600; font-family: 'Potta One', cursive; box-shadow: 0 4px 10px rgba(0,0,0,0.3); animation: float-up 2s forwards; pointer-events: none; font-size: 1.1rem; }
+        /* 浮かび上がる吹き出し：改行防止 */
+        .bubble { 
+            position: fixed; background: #fff; color: #333; padding: 12px 20px; 
+            border-radius: 20px; font-weight: bold; z-index: 1600; 
+            font-family: 'Potta One', cursive; box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+            animation: float-up 2s forwards; pointer-events: none; 
+            font-size: 1.1rem;
+            white-space: nowrap; /* 改行を禁止 */
+            min-width: fit-content;
+        }
         .bubble::after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); border-width: 10px 10px 0; border-style: solid; border-color: #fff transparent transparent; }
         @keyframes float-up { 0% { opacity: 0; transform: translate(-50%, 0); } 10% { opacity: 1; transform: translate(-50%, -20px); } 80% { opacity: 1; transform: translate(-50%, -40px); } 100% { opacity: 0; transform: translate(-50%, -60px); } }
+
+        /* かっこいい矢印のスタイル */
+        .arrow-v { width: 14px; height: 35px; position: relative; display: flex; justify-content: center; }
+        .arrow-v::before { content: ''; position: absolute; width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; }
+        .arrow-v::after { content: ''; position: absolute; width: 6px; height: 20px; top: 12px; }
+
+        /* 昇順（上向き） */
+        .asc-arrow::before { border-bottom: 15px solid var(--asc-blue); top: -5px; }
+        .asc-arrow::after { background: var(--asc-blue); box-shadow: 0 0 10px var(--asc-blue); }
+        /* 降順（下向き） */
+        .desc-arrow::before { border-top: 15px solid var(--desc-red); bottom: -5px; }
+        .desc-arrow::after { background: var(--desc-red); top: 3px; box-shadow: 0 0 10px var(--desc-red); }
 
         #result-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #result-screen h2 { font-size: 3.5rem; margin-bottom: 20px; text-shadow: 0 0 20px currentColor; font-family: 'Potta One', cursive; }
@@ -50,7 +74,7 @@
         #user-info-area { position: absolute; top: 20px; left: 20px; font-size: 0.9rem; border-bottom: 1px solid #666; cursor: pointer; padding: 5px; z-index: 100; }
         .btn { background: #333; color: white; border: 1px solid white; padding: 12px 25px; margin: 10px; font-size: 1.1rem; width: 220px; cursor: pointer; border-radius: 4px; }
         .btn-back { position: absolute; top: 20px; left: 20px; width: auto; padding: 8px 15px; font-size: 0.9rem; border: 1px solid white; background: #333; z-index: 100; }
-        input { background: #000; color: white; border: 1px solid white; padding: 10px; font-size: 1.2rem; width: 220px; text-align: center; margin-bottom: 15px; -webkit-user-select: auto; user-select: auto; }
+        input { background: #000; color: white; border: 1px solid white; padding: 10px; font-size: 1.2rem; width: 220px; text-align: center; margin-bottom: 15px; }
 
         #turn-indicator { width: 100%; padding: 10px; font-weight: bold; position: fixed; top: 0; left: 0; z-index: 10; display: none; font-size: 0.9rem; box-shadow: 0 2px 10px rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
         .my-turn { background: var(--my-turn-bg); } .others-turn { background: var(--others-turn-bg); }
@@ -59,31 +83,30 @@
         #game-info span { color: #2ed573; font-size: 1.3rem; margin: 0 5px; }
 
         #game-area { width: 100%; height: 100%; display: none; text-align: center; padding-top: 80px; }
-        #piles-display { display: none; background: var(--felt-green); padding: 15px; border-radius: 15px; border: 4px solid #4a3000; box-shadow: inset 0 0 50px rgba(0,0,0,0.5), 0 5px 15px rgba(0,0,0,0.8); margin: 5px auto; width: fit-content; }
-        .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; justify-content: center; }
-        .pile-wrapper { display: flex; align-items: center; gap: 4px; }
-        .arrow { font-size: 1.1rem; font-weight: bold; color: rgba(255,255,255,0.6); }
-        .pile { height: 90px; width: 75px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.3); position: relative; transition: 0.3s; }
-        .pile.asc { border-color: #008cff; } .pile.desc { border-color: #ff3c00; }
-        .pile-value { font-size: 1.8rem; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        #piles-display { display: none; background: var(--felt-green); padding: 20px; border-radius: 20px; border: 4px solid #4a3000; box-shadow: inset 0 0 60px rgba(0,0,0,0.6), 0 8px 20px rgba(0,0,0,0.8); margin: 5px auto; width: fit-content; }
+        .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; justify-content: center; }
+        .pile-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .pile { height: 95px; width: 78px; border: 2px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.4); position: relative; transition: 0.3s; }
+        .pile.asc { border-color: var(--asc-blue); } .pile.desc { border-color: var(--desc-red); }
+        .pile-value { font-size: 1.9rem; font-weight: bold; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
 
-        @keyframes soft-glow { 0% { box-shadow: 0 0 0px #fff; } 50% { box-shadow: 0 0 30px #fff; background: rgba(255,255,255,0.2); } 100% { box-shadow: 0 0 0px #fff; } }
+        @keyframes soft-glow { 0% { box-shadow: 0 0 0px #fff; } 50% { box-shadow: 0 0 35px #fff; background: rgba(255,255,255,0.2); } 100% { box-shadow: 0 0 0px #fff; } }
         .placed-effect { animation: soft-glow 0.8s ease-out; }
 
-        .hand-container { margin-top: 5px; width: 100%; display: flex; flex-direction: column; align-items: center; }
-        #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; max-width: 320px; }
+        .hand-container { margin-top: 10px; width: 100%; display: flex; flex-direction: column; align-items: center; }
+        #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; max-width: 340px; }
         
         .card { 
-            width: 46px; height: 68px; background: #fff; color: #000; border-radius: 4px; 
-            font-size: 1.2rem; font-weight: bold; display: flex; justify-content: center; align-items: center; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5); transition: transform 0.1s; touch-action: none;
+            width: 48px; height: 72px; background: #fff; color: #000; border-radius: 5px; 
+            font-size: 1.3rem; font-weight: bold; display: flex; justify-content: center; align-items: center; 
+            box-shadow: 0 3px 6px rgba(0,0,0,0.5); transition: transform 0.1s; touch-action: none;
         }
-        .card-placeholder { width: 46px; height: 68px; }
-        .dragging-active { position: fixed; pointer-events: none; z-index: 10000; transform: scale(1.1); opacity: 0.9; }
+        .card-placeholder { width: 48px; height: 72px; }
+        .dragging-active { position: fixed; pointer-events: none; z-index: 10000; transform: scale(1.15); opacity: 0.95; box-shadow: 0 10px 20px rgba(0,0,0,0.6); }
 
         #finish-btn.glow { animation: soft-glow 2s infinite; border-color: #fff; }
-        #consult-box { background: rgba(0,0,0,0.6); padding: 15px; border-radius: 12px; margin: 0 auto 10px; width: 90%; max-width: 400px; border: 1px solid #444; }
-        @keyframes moya { 0%, 100% { box-shadow: 0 0 5px #fff; } 50% { box-shadow: 0 0 25px #fff; } }
+        #consult-box { background: rgba(0,0,0,0.7); padding: 18px; border-radius: 15px; margin: 0 auto 10px; width: 90%; max-width: 400px; border: 1px solid #555; }
+        @keyframes moya { 0%, 100% { box-shadow: 0 0 5px #fff; } 50% { box-shadow: 0 0 30px #fff; } }
         .signal-glow { animation: moya 0.5s infinite; border-color: #fff !important; }
     </style>
 </head>
@@ -137,10 +160,22 @@
 
     <div id="piles-display">
         <div class="piles-container">
-            <div class="pile-wrapper"><div class="arrow">↑</div><div id="a1" class="pile asc" onclick="sendSignal('a1')"><div class="pile-value">1</div></div><div class="arrow">↑</div></div>
-            <div class="pile-wrapper"><div class="arrow">↑</div><div id="a2" class="pile asc" onclick="sendSignal('a2')"><div class="pile-value">1</div></div><div class="arrow">↑</div></div>
-            <div class="pile-wrapper"><div class="arrow">↓</div><div id="d1" class="pile desc" onclick="sendSignal('d1')"><div class="pile-value">100</div></div><div class="arrow">↓</div></div>
-            <div class="pile-wrapper"><div class="arrow">↓</div><div id="d2" class="pile desc" onclick="sendSignal('d2')"><div class="pile-value">100</div></div><div class="arrow">↓</div></div>
+            <div class="pile-wrapper">
+                <div class="arrow-v asc-arrow"></div>
+                <div id="a1" class="pile asc" onclick="sendSignal('a1')"><div class="pile-value">1</div></div>
+            </div>
+            <div class="pile-wrapper">
+                <div class="arrow-v asc-arrow"></div>
+                <div id="a2" class="pile asc" onclick="sendSignal('a2')"><div class="pile-value">1</div></div>
+            </div>
+            <div class="pile-wrapper">
+                <div id="d1" class="pile desc" onclick="sendSignal('d1')"><div class="pile-value">100</div></div>
+                <div class="arrow-v desc-arrow"></div>
+            </div>
+            <div class="pile-wrapper">
+                <div id="d2" class="pile desc" onclick="sendSignal('d2')"><div class="pile-value">100</div></div>
+                <div class="arrow-v desc-arrow"></div>
+            </div>
         </div>
     </div>
 
@@ -206,7 +241,7 @@
         const stamps = started ? gameStamps : waitStamps;
         menu.innerHTML = stamps.map(s => `<div class="stamp-option" onclick="sendStamp('${s}')">${s}</div>`).join('');
     }
-    function toggleStampMenu() { const m = document.getElementById('stamp-menu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
+    function toggleStampMenu() { const m = document.getElementById('stamp-menu'); m.style.display = m.style.display === 'grid' ? 'none' : 'grid'; }
     function sendStamp(msg) { socket.emit('send_stamp', { room_id: myRoom, name: myName, msg: msg }); toggleStampMenu(); }
     
     socket.on('receive_stamp', data => {
@@ -274,8 +309,8 @@
 
         const updateClonePos = (x, y) => {
             if (!draggingData.clone) return;
-            draggingData.clone.style.left = (x - 23) + 'px';
-            draggingData.clone.style.top = (y - 34) + 'px';
+            draggingData.clone.style.left = (x - 24) + 'px';
+            draggingData.clone.style.top = (y - 36) + 'px';
         };
 
         const endDrag = (x, y) => {
