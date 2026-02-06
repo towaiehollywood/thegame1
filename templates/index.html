@@ -23,10 +23,19 @@
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .screen.active { display: flex; }
 
+        /* スタンプUI：横並びに修正 */
         #stamp-btn { position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; background: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-size: 1.5rem; color: #333; }
-        #stamp-menu { position: fixed; bottom: 80px; right: 20px; background: rgba(255,255,255,0.95); padding: 10px; border-radius: 15px; display: none; flex-direction: column; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .stamp-option { padding: 10px 20px; color: #333; font-weight: bold; cursor: pointer; border-bottom: 1px solid #ddd; white-space: nowrap; font-family: 'Comic Sans MS', cursive, sans-serif; }
-        .stamp-option:last-child { border: none; }
+        #stamp-menu { 
+            position: fixed; bottom: 80px; right: 20px; background: rgba(255,255,255,0.95); 
+            padding: 8px; border-radius: 12px; display: none; 
+            flex-direction: row; /* 横並び */
+            gap: 8px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+        }
+        .stamp-option { 
+            padding: 8px 12px; color: #333; font-weight: bold; cursor: pointer; 
+            border: 1px solid #ddd; border-radius: 8px; background: #fff;
+            white-space: nowrap; font-family: 'Comic Sans MS', cursive, sans-serif; font-size: 0.85rem;
+        }
 
         .bubble { position: fixed; background: #fff; color: #333; padding: 10px 20px; border-radius: 20px; font-weight: bold; z-index: 1600; font-family: 'Comic Sans MS', cursive, sans-serif; box-shadow: 0 4px 10px rgba(0,0,0,0.3); animation: float-up 2s forwards; pointer-events: none; }
         .bubble::after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); border-width: 10px 10px 0; border-style: solid; border-color: #fff transparent transparent; }
@@ -63,15 +72,14 @@
         .hand-container { margin-top: 5px; width: 100%; display: flex; flex-direction: column; align-items: center; }
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; max-width: 320px; }
         
-        /* カードのスタイル：ドラッグ中に浮き上がる演出追加 */
         .card { 
             width: 46px; height: 68px; background: #fff; color: #000; border-radius: 4px; 
             font-size: 1.2rem; font-weight: bold; display: flex; justify-content: center; align-items: center; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.5); transition: transform 0.1s;
-            touch-action: none; /* 標準の挙動を無効化 */
+            touch-action: none;
         }
         .card-placeholder { width: 46px; height: 68px; }
-        .dragging-active { position: fixed; pointer-events: none; z-index: 10000; transform: scale(1.2); opacity: 0.9; }
+        .dragging-active { position: fixed; pointer-events: none; z-index: 10000; transform: scale(1.1); opacity: 0.9; }
 
         #finish-btn.glow { animation: soft-glow 2s infinite; border-color: #fff; }
         #consult-box { background: rgba(0,0,0,0.6); padding: 15px; border-radius: 12px; margin: 0 auto 10px; width: 90%; max-width: 400px; border: 1px solid #444; }
@@ -158,9 +166,8 @@
     let state = { deckCount: 0, hand: [], piles: {a1:1, a2:1, d1:100, d2:100}, played: 0, playerHands: {} };
     let clearNotified = false;
 
-    // タッチ制御用変数
-    let touchDraggingCard = null;
-    let dragClone = null;
+    // ドラッグ管理
+    let draggingData = { cardValue: null, el: null, clone: null };
 
     const waitStamps = ["よろしく！", "早く始めて！", "ばーか", "頑張ろう！"];
     const gameStamps = ["はやくおいて！", "いいねぇ", "やらかしたな", "神の一手"];
@@ -196,6 +203,7 @@
         render();
     });
 
+    // スタンプ横並びメニュー
     function updateStampMenu(started) {
         const menu = document.getElementById('stamp-menu');
         const stamps = started ? gameStamps : waitStamps;
@@ -206,12 +214,9 @@
     
     socket.on('receive_stamp', data => {
         const bubble = document.createElement('div');
-        bubble.className = 'bubble';
-        bubble.innerText = `${data.name}: ${data.msg}`;
-        bubble.style.left = '50%';
-        bubble.style.top = '50%';
-        document.body.appendChild(bubble);
-        setTimeout(() => bubble.remove(), 2000);
+        bubble.className = 'bubble'; bubble.innerText = `${data.name}: ${data.msg}`;
+        bubble.style.left = '50%'; bubble.style.top = '50%';
+        document.body.appendChild(bubble); setTimeout(() => bubble.remove(), 2000);
     });
 
     function confirmStart(n) { 
@@ -236,8 +241,7 @@
         if(state.playerHands[cur] === 0) {
             if(checkAllHandsEmpty()) return;
             currentIdx = (currentIdx + 1) % turnOrder.length;
-            updateTurnDisplay();
-            return;
+            updateTurnDisplay(); return;
         }
         const nextIdx = (currentIdx + 1) % turnOrder.length;
         let nextP = turnOrder[nextIdx];
@@ -259,62 +263,63 @@
         p.classList.add('signal-glow'); setTimeout(() => p.classList.remove('signal-glow'), 1500);
     });
 
-    // --- 改良版：タッチイベントによるドラッグ制御 ---
-    function initTouchEvents(cardEl, value) {
-        if (!myTurn) return;
-
-        cardEl.ontouchstart = (e) => {
+    // --- PC/スマホ両対応のドラッグ制御 ---
+    function initDragEvents(cardEl, value) {
+        const startDrag = (x, y) => {
             if (!myTurn) return;
-            const touch = e.touches[0];
-            touchDraggingCard = value;
-
-            // クローン作成して浮かせる
-            dragClone = cardEl.cloneNode(true);
-            dragClone.classList.add('dragging-active');
-            dragClone.style.left = touch.clientX - 23 + 'px';
-            dragClone.style.top = touch.clientY - 34 + 'px';
-            document.body.appendChild(dragClone);
-            
+            draggingData.cardValue = value;
+            draggingData.el = cardEl;
+            draggingData.clone = cardEl.cloneNode(true);
+            draggingData.clone.classList.add('dragging-active');
+            updateClonePos(x, y);
+            document.body.appendChild(draggingData.clone);
             cardEl.style.opacity = '0.3';
         };
 
-        cardEl.ontouchmove = (e) => {
-            if (!dragClone) return;
-            const touch = e.touches[0];
-            dragClone.style.left = touch.clientX - 23 + 'px';
-            dragClone.style.top = touch.clientY - 34 + 'px';
+        const updateClonePos = (x, y) => {
+            if (!draggingData.clone) return;
+            draggingData.clone.style.left = (x - 23) + 'px';
+            draggingData.clone.style.top = (y - 34) + 'px';
         };
 
-        cardEl.ontouchend = (e) => {
-            if (!dragClone) return;
-            const touch = e.changedTouches[0];
-            const targetPile = document.elementFromPoint(touch.clientX, touch.clientY);
+        const endDrag = (x, y) => {
+            if (!draggingData.clone) return;
+            const target = document.elementFromPoint(x, y);
+            const pile = target ? target.closest('.pile') : null;
+            if (pile) attemptPlaceCard(draggingData.cardValue, pile.id);
             
-            // 重なっている要素が pile か、その子要素か判定
-            const pileEl = targetPile ? targetPile.closest('.pile') : null;
-            
-            if (pileEl) {
-                attemptPlaceCard(touchDraggingCard, pileEl.id);
-            }
-
-            document.body.removeChild(dragClone);
-            dragClone = null;
+            document.body.removeChild(draggingData.clone);
+            draggingData.clone = null;
             cardEl.style.opacity = '1';
-            touchDraggingCard = null;
         };
+
+        // マウスイベント (PC)
+        cardEl.onmousedown = (e) => {
+            startDrag(e.clientX, e.clientY);
+            window.onmousemove = (me) => updateClonePos(me.clientX, me.clientY);
+            window.onmouseup = (ue) => {
+                endDrag(ue.clientX, ue.clientY);
+                window.onmousemove = null; window.onmouseup = null;
+            };
+        };
+
+        // タッチイベント (スマホ)
+        cardEl.ontouchstart = (e) => {
+            const t = e.touches[0];
+            startDrag(t.clientX, t.clientY);
+        };
+        cardEl.ontouchmove = (e) => updateClonePos(e.touches[0].clientX, e.touches[0].clientY);
+        cardEl.ontouchend = (e) => endDrag(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
     }
 
     function attemptPlaceCard(val, pid) {
         const top = state.piles[pid];
         const isAsc = pid.startsWith('a');
         if((isAsc && (val > top || val == top-10)) || (!isAsc && (val < top || val == top+10))) {
-            state.piles[pid] = val; 
-            state.hand[state.hand.indexOf(val)] = null; 
-            state.played++;
+            state.piles[pid] = val; state.hand[state.hand.indexOf(val)] = null; state.played++;
             state.playerHands[myName]--;
             socket.emit('sync_move', { room_id: myRoom, pileId: pid, val: val, name: myName });
-            render();
-            checkGameStatus();
+            render(); checkGameStatus();
         }
     }
 
@@ -335,21 +340,19 @@
         const turnFinished = state.played >= min;
         if(totalRemaining === 0) { socket.emit('game_end', { room_id: myRoom, type: 'perfect', msg: 'PERFECT CLEAR', sub: '伝説のチームワークです！' }); return; }
         if(!canMove && !turnFinished) {
-            if(totalRemaining <= 9) { socket.emit('game_end', { room_id: myRoom, type: 'win', msg: 'CLEAR', sub: '残り' + totalRemaining + '枚！勝利です。' }); }
-            else { socket.emit('game_end', { room_id: myRoom, type: 'lose', msg: 'GAME OVER', sub: totalRemaining + '枚残し...再挑戦しましょう' }); }
+            if(totalRemaining <= 9) socket.emit('game_end', { room_id: myRoom, type: 'win', msg: 'CLEAR', sub: '残り' + totalRemaining + '枚！勝利です。' });
+            else socket.emit('game_end', { room_id: myRoom, type: 'lose', msg: 'GAME OVER', sub: totalRemaining + '枚残し...' });
             return;
         }
         if(totalRemaining <= 9 && !clearNotified) { showClearNotice(); clearNotified = true; }
     }
 
-    function getTotalRemaining() { const handTotal = Object.values(state.playerHands).reduce((a, b) => a + b, 0); return handTotal + state.deckCount; }
-
+    function getTotalRemaining() { return Object.values(state.playerHands).reduce((a, b) => a + b, 0) + state.deckCount; }
     function checkCanMove() {
         const hand = state.hand.filter(v => v !== null);
         for(let val of hand) {
             for(let pid in state.piles) {
-                const top = state.piles[pid];
-                const isAsc = pid.startsWith('a');
+                const top = state.piles[pid], isAsc = pid.startsWith('a');
                 if((isAsc && (val > top || val == top-10)) || (!isAsc && (val < top || val == top+10))) return true;
             }
         }
@@ -360,9 +363,10 @@
 
     socket.on('receive_game_end', data => {
         const screen = document.getElementById('result-screen');
-        const text = document.getElementById('result-text');
-        const sub = document.getElementById('result-subtext');
-        text.innerText = data.msg; text.className = data.type; sub.innerText = data.sub; screen.style.display = 'flex';
+        document.getElementById('result-text').innerText = data.msg;
+        document.getElementById('result-text').className = data.type;
+        document.getElementById('result-subtext').innerText = data.sub;
+        screen.style.display = 'flex';
         document.getElementById('stamp-ui').style.display = 'none';
     });
 
@@ -377,14 +381,9 @@
         state.hand.forEach(v => {
             const d = document.createElement('div');
             if(v===null) d.className='card-placeholder';
-            else { 
-                d.className='card'; d.innerText=v;
-                // スマホ用タッチイベント初期化
-                initTouchEvents(d, v);
-            }
+            else { d.className='card'; d.innerText=v; initDragEvents(d, v); }
             h.appendChild(d);
         });
-
         const fb = document.getElementById('finish-btn'), min = state.deckCount > 0 ? 2 : 1;
         if(state.played >= min && myTurn) fb.classList.add('glow'); else fb.classList.remove('glow');
     }
@@ -401,8 +400,7 @@
         if(data.player_name === myName) {
             let dIdx = 0;
             state.hand = state.hand.map(v => (v === null && dIdx < data.cards.length) ? data.cards[dIdx++] : v).sort((a,b)=>a?b?a-b:-1:1);
-            state.played = 0;
-            state.playerHands[myName] = state.hand.filter(v => v !== null).length;
+            state.played = 0; state.playerHands[myName] = state.hand.filter(v => v !== null).length;
             currentIdx = (currentIdx + 1) % turnOrder.length;
             socket.emit('next_turn', { room_id: myRoom, nextIdx: currentIdx });
             updateTurnDisplay(); render();
