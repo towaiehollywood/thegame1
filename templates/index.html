@@ -12,8 +12,8 @@
             --my-turn-bg: #2e7d32; 
             --others-turn-bg: #c62828; 
             --bg-dark: #000000;
-            --asc-blue: #00d2ff;
-            --desc-red: #ff4b2b;
+            --asc-blue: #4a5d6e; /* イラストに近い落ち着いた青灰色 */
+            --desc-red: #4a5d6e; /* 矢印の色を統一 */
         }
         
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; font-family: sans-serif; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -27,26 +27,23 @@
         .screen.active { display: flex; }
 
         #stamp-btn { position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-size: 1.8rem; color: #333; }
-        #stamp-menu { 
-            position: fixed; bottom: 85px; right: 20px; background: rgba(255,255,255,0.95); 
-            padding: 12px; border-radius: 16px; display: none; grid-template-columns: repeat(2, 1fr); 
-            gap: 10px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
-        }
+        #stamp-menu { position: fixed; bottom: 85px; right: 20px; background: rgba(255,255,255,0.95); padding: 12px; border-radius: 16px; display: none; grid-template-columns: repeat(2, 1fr); gap: 10px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .stamp-option { padding: 10px; color: #333; font-weight: bold; cursor: pointer; border: 1px solid #ddd; border-radius: 8px; background: #fff; text-align: center; font-family: 'Potta One', cursive; font-size: 0.8rem; white-space: nowrap; }
 
         .bubble { position: fixed; background: #fff; color: #333; padding: 12px 20px; border-radius: 20px; font-weight: bold; z-index: 1600; font-family: 'Potta One', cursive; box-shadow: 0 4px 12px rgba(0,0,0,0.3); animation: float-up 2s forwards; pointer-events: none; font-size: 1.1rem; white-space: nowrap; min-width: fit-content; }
         .bubble::after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); border-width: 10px 10px 0; border-style: solid; border-color: #fff transparent transparent; }
         @keyframes float-up { 0% { opacity: 0; transform: translate(-50%, 0); } 10% { opacity: 1; transform: translate(-50%, -20px); } 80% { opacity: 1; transform: translate(-50%, -40px); } 100% { opacity: 0; transform: translate(-50%, -60px); } }
 
-        /* かっこいい矢印：イラスト風 */
-        .arrow-v { width: 18px; height: 30px; position: relative; display: flex; justify-content: center; }
-        .arrow-v::before { content: ''; position: absolute; width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; }
-        .arrow-v::after { content: ''; position: absolute; width: 8px; height: 18px; }
+        /* 特徴的な矢印の作成（先端が太くなるデザイン） */
+        .arrow-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 40px; }
+        
+        .custom-arrow { width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; position: relative; }
+        .arrow-stem { width: 4px; height: 25px; background-color: var(--asc-blue); }
 
-        .asc-arrow::before { border-bottom: 15px solid var(--asc-blue); top: -10px; }
-        .asc-arrow::after { background: var(--asc-blue); top: 5px; box-shadow: 0 0 10px var(--asc-blue); }
-        .desc-arrow::before { border-top: 15px solid var(--desc-red); bottom: -10px; }
-        .desc-arrow::after { background: var(--desc-red); top: 5px; box-shadow: 0 0 10px var(--desc-red); }
+        /* 上向き矢印 */
+        .asc-arrow-head { border-bottom: 18px solid var(--asc-blue); margin-bottom: -2px; }
+        /* 下向き矢印 */
+        .desc-arrow-head { border-top: 18px solid var(--asc-blue); margin-top: -2px; }
 
         #result-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         #result-screen h2 { font-size: 3.5rem; margin-bottom: 20px; text-shadow: 0 0 20px currentColor; font-family: 'Potta One', cursive; }
@@ -66,24 +63,33 @@
 
         #game-area { width: 100%; height: 100%; display: none; text-align: center; padding-top: 80px; }
         
-        /* イラストに基づいた新しい配置 */
+        /* 修正版：イラスト通りの配置と形状 */
         #piles-display { 
-            display: none; background: var(--felt-green); padding: 15px; 
-            border-radius: 20px; border: 4px solid #4a3000; 
+            display: none; background: var(--felt-green); padding: 25px; 
+            border-radius: 40px; border: 3px solid #1a2a24; 
             box-shadow: inset 0 0 60px rgba(0,0,0,0.6), 0 8px 20px rgba(0,0,0,0.8); 
-            margin: 5px auto; width: 95%; max-width: 450px;
+            margin: 5px auto; width: 95%; max-width: 420px;
         }
+        /* 2x2のグリッド、中央に矢印用カラム */
         .piles-grid { 
-            display: grid; grid-template-columns: repeat(2, 1fr); 
-            grid-template-rows: repeat(2, 1fr); gap: 15px; justify-items: center; align-items: center;
+            display: grid; 
+            grid-template-columns: 1fr 40px 1fr; 
+            grid-template-rows: 1fr 1fr; 
+            gap: 15px; 
+            align-items: center; 
         }
 
-        .pile-wrapper { display: flex; align-items: center; gap: 8px; }
-        .pile { height: 95px; width: 78px; border: 2px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.4); position: relative; transition: 0.3s; }
-        .pile.asc { border-color: var(--asc-blue); } .pile.desc { border-color: var(--desc-red); }
-        .pile-value { font-size: 1.9rem; font-weight: bold; text-shadow: 0 2px 5px rgba(0,0,0,0.8); }
+        /* 横長の枠 */
+        .pile { 
+            height: 75px; width: 130px; 
+            border: 2px solid #1a2a24; border-radius: 15px; 
+            display: flex; justify-content: center; align-items: center; 
+            background: #ffffff; color: #333; /* イラストに近い白背景 */
+            position: relative; transition: 0.3s; 
+        }
+        .pile-value { font-size: 2.2rem; font-weight: bold; }
 
-        @keyframes soft-glow { 0% { box-shadow: 0 0 0px #fff; } 50% { box-shadow: 0 0 35px #fff; background: rgba(255,255,255,0.2); } 100% { box-shadow: 0 0 0px #fff; } }
+        @keyframes soft-glow { 0% { box-shadow: 0 0 0px #fff; } 50% { box-shadow: 0 0 35px #fff; } 100% { box-shadow: 0 0 0px #fff; } }
         .placed-effect { animation: soft-glow 0.8s ease-out; }
 
         .hand-container { margin-top: 10px; width: 100%; display: flex; flex-direction: column; align-items: center; }
@@ -148,22 +154,19 @@
 
     <div id="piles-display">
         <div class="piles-grid">
-            <div class="pile-wrapper">
-                <div class="arrow-v asc-arrow"></div>
-                <div id="a1" class="pile asc" onclick="sendSignal('a1')"><div class="pile-value">1</div></div>
+            <div id="a1" class="pile" onclick="sendSignal('a1')"><div class="pile-value">1</div></div>
+            <div class="arrow-container">
+                <div class="custom-arrow asc-arrow-head"></div>
+                <div class="arrow-stem"></div>
             </div>
-            <div class="pile-wrapper">
-                <div id="d1" class="pile desc" onclick="sendSignal('d1')"><div class="pile-value">100</div></div>
-                <div class="arrow-v desc-arrow"></div>
+            <div id="a2" class="pile" onclick="sendSignal('a2')"><div class="pile-value">1</div></div>
+
+            <div id="d1" class="pile" onclick="sendSignal('d1')"><div class="pile-value">100</div></div>
+            <div class="arrow-container">
+                <div class="arrow-stem"></div>
+                <div class="custom-arrow desc-arrow-head"></div>
             </div>
-            <div class="pile-wrapper">
-                <div class="arrow-v asc-arrow"></div>
-                <div id="a2" class="pile asc" onclick="sendSignal('a2')"><div class="pile-value">1</div></div>
-            </div>
-            <div class="pile-wrapper">
-                <div id="d2" class="pile desc" onclick="sendSignal('d2')"><div class="pile-value">100</div></div>
-                <div class="arrow-v desc-arrow"></div>
-            </div>
+            <div id="d2" class="pile" onclick="sendSignal('d2')"><div class="pile-value">100</div></div>
         </div>
     </div>
 
