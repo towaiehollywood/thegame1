@@ -6,8 +6,6 @@
     <title>THE GAME - Online</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700&family=Noto+Serif+JP:wght@900&display=swap');
-        
         :root { 
             --bg-color: #000000; 
             --accent-color: #ffffff; 
@@ -15,76 +13,102 @@
             --desc-glow: rgba(255, 60, 0, 0.6);
         }
 
-        * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; font-family: 'Shippori Mincho B1', serif; box-sizing: border-box; }
-        body { background: var(--bg-color); background-image: radial-gradient(circle at center, #111 0%, #000 100%); color: var(--accent-color); margin: 0; padding: 10px; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; }
+        /* 厨二病的なフォント指定を解除し、標準的な明朝体へ */
+        * { 
+            -webkit-tap-highlight-color: transparent; 
+            -webkit-touch-callout: none; 
+            -webkit-user-select: none; 
+            user-select: none; 
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            box-sizing: border-box; 
+        }
 
-        /* タイトルフェードイン・アウト演出 */
-        #splash-screen { position: fixed; inset: 0; background: black; display: flex; justify-content: center; align-items: center; z-index: 1000; transition: opacity 1s; }
-        #splash-screen h1 { font-family: 'Noto Serif JP', serif; font-size: 2.5rem; letter-spacing: 0.8rem; text-shadow: 0 0 20px white; }
+        body { 
+            background: var(--bg-color); 
+            color: var(--accent-color); 
+            margin: 0; 
+            padding: 10px; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* スプラッシュ画面：中央揃えと表記の修正 */
+        #splash-screen { 
+            position: fixed; 
+            inset: 0; 
+            background: black; 
+            display: flex; 
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center; 
+            z-index: 1000; 
+            transition: opacity 1s; 
+        }
+        #splash-screen h1 { 
+            font-size: 2rem; 
+            letter-spacing: 0.2rem; 
+            text-align: center;
+            line-height: 1.5;
+        }
 
         .screen { display: none; height: 100vh; width: 100%; flex-direction: column; justify-content: center; align-items: center; position: relative; }
         .screen.active { display: flex; }
 
-        /* 名前表示 */
         #user-name-tag { position: absolute; top: 25px; left: 20px; font-size: 0.9rem; border-bottom: 1px solid #666; cursor: pointer; padding: 2px 5px; }
 
         .btn { background: transparent; color: white; border: 1px solid white; padding: 12px 25px; margin: 10px; font-size: 1.1rem; width: 220px; cursor: pointer; transition: 0.3s; }
         .btn:active { background: white; color: black; }
-        .btn-back { position: absolute; top: 25px; left: 20px; width: auto; padding: 5px 15px; font-size: 0.85rem; border: 1px solid #666; color: #aaa; background: rgba(255, 255, 255, 0.05); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        input { background: #111; color: white; border: 1px solid white; padding: 10px; font-size: 1.5rem; width: 200px; text-align: center; margin-bottom: 20px; outline: none; }
+        input { background: #111; color: white; border: 1px solid white; padding: 10px; font-size: 1.5rem; width: 200px; text-align: center; margin-bottom: 20px; outline: none; border-radius: 4px; }
 
-        /* 盤面：中央揃えを修正 */
-        #game-area { width: 100%; max-width: 500px; margin: 0 auto; text-align: center; }
-        .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; justify-items: center; margin: 20px auto; width: fit-content; }
+        /* ゲーム盤面の中央配置を維持 */
+        #game-area { width: 100%; max-width: 500px; margin: 0 auto; display: none; }
+        .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; justify-content: center; margin: 20px auto; width: fit-content; }
         
         .pile { 
             height: 120px; width: 100px; border: 1px solid #444; border-radius: 4px; 
-            display: flex; flex-direction: column; justify-content: center; 
-            align-items: center; background: rgba(255,255,255,0.02); transition: 0.3s; position: relative;
+            display: flex; justify-content: center; align-items: center; 
+            background: rgba(255,255,255,0.02); transition: 0.3s; position: relative;
         }
         .pile.asc { box-shadow: inset 0 0 15px var(--asc-glow); border-color: #008cff; }
         .pile.desc { box-shadow: inset 0 0 15px var(--desc-glow); border-color: #ff3c00; }
-        .pile-value { font-size: 2.2rem; text-shadow: 0 0 10px white; }
+        .pile-value { font-size: 2.2rem; }
 
-        /* 合図用のもやもやエフェクト */
+        /* 合図のエフェクト */
         @keyframes moyamoya { 0% { box-shadow: 0 0 5px white; opacity: 0; } 50% { box-shadow: 0 0 30px white; opacity: 0.8; } 100% { box-shadow: 0 0 5px white; opacity: 0; } }
         .signal-glow::after { content: ""; position: absolute; inset: -5px; border-radius: 6px; border: 2px solid white; animation: moyamoya 1s infinite ease-in-out; pointer-events: none; }
 
-        /* 手札：上下2段で枚数差を少なく */
-        .hand-container { margin-top: 20px; border-top: 1px solid #222; padding-top: 20px; width: 100%; }
+        .hand-container { margin-top: 20px; border-top: 1px solid #222; padding-top: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; }
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 300px; margin: 0 auto; }
         
-        .card { 
-            width: 52px; height: 80px; background: #fff; color: #000; 
-            border-radius: 2px; font-size: 1.4rem; font-weight: bold; 
-            box-shadow: 0 0 15px rgba(255,255,255,0.2); 
-            display: flex; justify-content: center; align-items: center;
-            touch-action: none;
-        }
-        .card-placeholder { width: 52px; height: 80px; } /* 出した後の場所を確保 */
+        .card { width: 52px; height: 80px; background: #fff; color: #000; border-radius: 2px; font-size: 1.4rem; font-weight: bold; display: flex; justify-content: center; align-items: center; touch-action: none; }
+        .card-placeholder { width: 52px; height: 80px; }
 
-        #finish-btn { margin: 20px auto; display: block; }
-        #player-list { font-size: 0.9rem; color: #ccc; margin-bottom: 10px; line-height: 1.5; }
+        #finish-btn { margin: 20px auto; }
+        #player-list { font-size: 0.9rem; color: #ccc; margin-bottom: 10px; }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
     <div id="splash-screen">
-        <h1>THE GAME<br>ONLINE</h1>
+        <h1>ザ・ゲーム<br>ONLINE</h1>
     </div>
 
     <div id="name-screen" class="screen">
-        <p>名を名乗れ</p>
-        <input type="text" id="name-input" maxlength="8" placeholder="プレイヤー名">
+        <p>名前を入力</p>
+        <input type="text" id="name-input" maxlength="8">
         <button class="btn" onclick="saveName()">確定</button>
     </div>
 
     <div id="menu-screen" class="screen">
-        <div id="user-name-tag" onclick="changeName()">Name: <span id="my-name-display"></span></div>
-        <h1>THE GAME</h1>
-        <button class="btn" onclick="createRoom()">部屋を作る</button>
-        <button class="btn" onclick="showJoinInput()">部屋に入る</button>
+        <div id="user-name-tag" onclick="changeName()">名前: <span id="my-name-display"></span></div>
+        <h1 style="border:none;">THE GAME</h1>
+        <button class="btn" id="create-room-btn" onclick="createRoom()">部屋を作る</button>
+        <button class="btn" id="show-join-btn" onclick="showJoinInput()">部屋に入る</button>
     </div>
 
     <div id="join-screen" class="screen">
@@ -99,19 +123,17 @@
         <h2>部屋番号: <span id="display-room-id">----</span></h2>
         <div id="player-list"></div>
         <button id="start-btn" class="btn" style="display:none; border:2px solid #fff;" onclick="sendStart()">始める</button>
-        <p id="wait-msg">ホストの開始を待っています...</p>
+        <p id="wait-msg">ホストが開始するのを待っています...</p>
     </div>
 
-    <div id="game-area" style="display:none;">
-        <div id="player-list-game" style="font-size:0.7rem; color:#888; margin-bottom:5px;"></div>
-        
+    <div id="game-area">
+        <div id="player-list-game" style="font-size:0.7rem; color:#888; margin-bottom:10px;"></div>
         <div class="piles-container">
             <div id="a1" class="pile asc" onclick="sendSignal('a1')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a1')"><div class="pile-value">1</div></div>
             <div id="a2" class="pile asc" onclick="sendSignal('a2')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a2')"><div class="pile-value">1</div></div>
             <div id="d1" class="pile desc" onclick="sendSignal('d1')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'd1')"><div class="pile-value">100</div></div>
             <div id="d2" class="pile desc" onclick="sendSignal('d2')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'd2')"><div class="pile-value">100</div></div>
         </div>
-
         <div class="hand-container">
             <div id="hand"></div>
             <button id="finish-btn" class="btn" onclick="finishTurn()">ターン終了</button>
@@ -125,7 +147,6 @@
         let isHost = false;
         let state = { deck: [], hand: [], piles: {a1:1, a2:1, d1:100, d2:100}, played: 0, maxHand: 8, draggedValue: null };
 
-        // --- 演出と名前管理 ---
         window.onload = () => {
             setTimeout(() => {
                 const splash = document.getElementById('splash-screen');
@@ -138,10 +159,22 @@
             }, 1000);
         };
 
+        function showScreen(id) {
+            document.querySelectorAll('.screen, #game-area').forEach(s => s.style.display = 'none');
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(id);
+            if (id === 'game-area') {
+                target.style.display = 'block';
+            } else {
+                target.classList.add('active');
+                target.style.display = 'flex';
+            }
+        }
+
         function saveName() {
-            const input = document.getElementById('name-input').value.trim();
-            if (!input) return alert("名を入力してください");
-            myName = input;
+            const val = document.getElementById('name-input').value.trim();
+            if (!val) return;
+            myName = val;
             localStorage.setItem('thegame_name', myName);
             showMenu();
         }
@@ -153,20 +186,19 @@
 
         function changeName() { showScreen('name-screen'); }
 
-        function showScreen(id) {
-            document.querySelectorAll('.screen, #game-area').forEach(s => s.style.display = 'none');
-            document.getElementById(id).style.display = 'flex';
-            if(id === 'game-area') document.getElementById(id).style.display = 'block';
+        function createRoom() { 
+            isHost = true; 
+            socket.emit('create_room', { name: myName }); 
         }
 
-        // --- 通信関連 ---
-        function createRoom() { isHost = true; socket.emit('create_room', { name: myName }); }
         function showJoinInput() { showScreen('join-screen'); }
+
         function joinRoom() {
             const id = document.getElementById('room-input').value;
             if(!id) return;
             document.getElementById('join-confirm-btn').disabled = true;
             myRoom = id;
+            isHost = false;
             socket.emit('join_room', { room_id: id, name: myName });
             showWaitScreen(id);
         }
@@ -180,21 +212,18 @@
         socket.on('player_joined', (data) => {
             const list = document.getElementById('player-list');
             list.innerHTML = data.players.map(p => `・${p}`).join('<br>');
-            document.getElementById('player-list-game').innerText = "隊員: " + data.players.join(', ');
+            document.getElementById('player-list-game').innerText = "参加者: " + data.players.join(', ');
         });
 
         function showWaitScreen(id) {
             showScreen('wait-screen');
             document.getElementById('display-room-id').innerText = id;
-            if(!isHost) document.getElementById('wait-msg').style.display = 'block';
+            document.getElementById('wait-msg').style.display = isHost ? 'none' : 'block';
         }
 
-        function backToMenu() {
-            socket.emit('leave_room', { room_id: myRoom });
-            location.reload(); // 状態リセットのため
-        }
+        function backToMenu() { location.reload(); }
 
-        function sendStart() { socket.emit('start_game', { room_id: myRoom }); }
+        function sendStart() { if(isHost) socket.emit('start_game', { room_id: myRoom }); }
 
         socket.on('game_started', (data) => {
             showScreen('game-area');
@@ -203,7 +232,6 @@
             initLocalGame();
         });
 
-        // --- ゲームロジック ---
         function initLocalGame() {
             state.deck = Array.from({length: 98}, (_, i) => i + 2);
             for(let i=state.deck.length-1; i>0; i--){
@@ -214,11 +242,7 @@
             render();
         }
 
-        // 合図（もやもや）の送信
-        function sendSignal(pileId) {
-            socket.emit('send_signal', { room_id: myRoom, pileId: pileId });
-        }
-
+        function sendSignal(pileId) { socket.emit('send_signal', { room_id: myRoom, pileId: pileId }); }
         socket.on('receive_signal', (data) => {
             const el = document.getElementById(data.pileId);
             el.classList.add('signal-glow');
@@ -233,7 +257,6 @@
             const isAsc = pileId.startsWith('a');
             if((isAsc && (card > top || card == top-10)) || (!isAsc && (card < top || card == top+10))) {
                 state.piles[pileId] = card;
-                // 手札から消すが、場所は維持するためnullにする
                 const idx = state.hand.indexOf(card);
                 state.hand[idx] = null;
                 state.played++;
@@ -243,16 +266,12 @@
             state.draggedValue = null;
         }
 
-        socket.on('update_board', (data) => {
-            state.piles[data.pileId] = data.val;
-            render();
-        });
+        socket.on('update_board', (data) => { state.piles[data.pileId] = data.val; render(); });
 
         function render() {
             for(let k in state.piles) document.querySelector(`#${k} .pile-value`).innerText = state.piles[k];
             const handEl = document.getElementById('hand');
             handEl.innerHTML = '';
-            
             state.hand.forEach(v => {
                 if (v === null) {
                     const p = document.createElement('div');
@@ -273,10 +292,8 @@
         function finishTurn() {
             const min = state.deck.length > 0 ? 2 : 1;
             if(state.played < min) return;
-            // nullの部分を詰めて補充
             let newHand = state.hand.filter(v => v !== null);
-            const drawCount = state.maxHand - newHand.length;
-            newHand = [...newHand, ...state.deck.splice(0, drawCount)].sort((a,b)=>a-b);
+            newHand = [...newHand, ...state.deck.splice(0, state.maxHand - newHand.length)].sort((a,b)=>a-b);
             state.hand = newHand;
             state.played = 0;
             render();
