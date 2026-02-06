@@ -42,7 +42,7 @@
             padding-bottom: 5px;
         }
 
-        .screen { display: none; height: 100vh; flex-direction: column; justify-content: center; align-items: center; }
+        .screen { display: none; height: 100vh; flex-direction: column; justify-content: center; align-items: center; position: relative; }
         .screen.active { display: flex; }
         
         .btn { 
@@ -54,13 +54,28 @@
         .btn:active { background: white; color: black; }
         .btn-start { border: 2px solid #fff; background: rgba(255,255,255,0.1); display: none; }
         
+        /* 戻るボタン（左上に配置） */
+        .btn-back {
+            position: absolute; 
+            top: 25px; 
+            left: 20px;
+            width: auto; 
+            padding: 5px 15px; 
+            font-size: 0.85rem;
+            border: 1px solid #666; 
+            color: #aaa;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        .btn-back:active { border-color: #fff; color: #fff; background: rgba(255, 255, 255, 0.2); }
+
         input { 
             background: #111; color: white; border: 1px solid white;
             padding: 10px; font-size: 1.5rem; width: 150px; text-align: center; 
-            margin-bottom: 20px;
+            margin-bottom: 20px; border-radius: 0;
         }
 
-        /* 盤面（結界） */
+        /* 盤面 */
         .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 400px; margin: 10px auto; }
         .pile { 
             height: 120px; border: 1px solid #444; border-radius: 4px; 
@@ -101,12 +116,14 @@
     </div>
 
     <div id="join-screen" class="screen">
+        <button class="btn btn-back" onclick="backToMenu()">← 戻る</button>
         <p>穿界門の鍵 (部屋番号)</p>
         <input type="number" id="room-input" pattern="\d*">
         <button class="btn" onclick="joinRoom()">入る</button>
     </div>
 
     <div id="wait-screen" class="screen">
+        <button class="btn btn-back" onclick="backToMenu()">← 離脱</button>
         <h2>部屋番号: <span id="display-room-id">----</span></h2>
         <p>現在の隊員: <span id="player-count">1</span>名</p>
         <button id="start-btn" class="btn btn-start" onclick="sendStart()">開戦</button>
@@ -135,11 +152,20 @@
         let isHost = false;
         let state = { deck: [], hand: [], piles: {a1:1, a2:1, d1:100, d2:100}, played: 0, maxHand: 8, draggedValue: null };
 
+        function backToMenu() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('menu-screen').classList.add('active');
+            myRoom = null;
+            isHost = false;
+        }
+
         function createRoom() { isHost = true; socket.emit('create_room'); }
+        
         function showJoinInput() { 
-            document.getElementById('menu-screen').classList.remove('active');
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('join-screen').classList.add('active');
         }
+
         function joinRoom() {
             const id = document.getElementById('room-input').value;
             socket.emit('join_room', { room_id: id });
@@ -213,15 +239,15 @@
             const handEl = document.getElementById('hand');
             handEl.innerHTML = '';
             state.hand.forEach(v => {
-                const c = document.createElement('div');
-                c.className = 'card'; c.innerText = v; c.draggable = true;
-                c.ondragstart = (e) => { 
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card'; cardDiv.innerText = v; cardDiv.draggable = true;
+                cardDiv.ondragstart = (e) => { 
                     state.draggedValue = v; 
                     e.target.classList.add('dragging');
                     e.dataTransfer.setData("text", v); 
                 };
-                c.ondragend = (e) => e.target.classList.remove('dragging');
-                handEl.appendChild(c);
+                cardDiv.ondragend = (e) => e.target.classList.remove('dragging');
+                handEl.appendChild(cardDiv);
             });
             const btn = document.getElementById('finish-btn');
             const min = state.deck.length > 0 ? 2 : 1;
