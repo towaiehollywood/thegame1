@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
         :root { 
-            --felt-green: #0a5c36; /* カジノのフェルト生地風 */
+            --felt-green: #0a5c36; 
             --my-turn-bg: #2e7d32; 
             --others-turn-bg: #c62828; 
         }
@@ -23,31 +23,64 @@
             align-items: center; 
         }
 
-        #splash { position: fixed; inset: 0; background: black; display: flex; justify-content: center; align-items: center; z-index: 2000; transition: opacity 1s; }
+        #splash { 
+            position: fixed; 
+            inset: 0; 
+            background: black; 
+            display: flex; 
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center; 
+            z-index: 2000; 
+            transition: opacity 1s; 
+        }
+        #splash h1 { 
+            font-size: 2.5rem; 
+            text-align: center; 
+            margin: 0; 
+            line-height: 1.2;
+            letter-spacing: 0.3rem;
+        }
 
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .screen.active { display: flex; }
 
-        /* 左上の名前・変更 */
         #user-info-area { position: absolute; top: 20px; left: 20px; font-size: 0.9rem; border-bottom: 1px solid #666; cursor: pointer; padding: 5px; z-index: 100; }
 
         .btn { background: #333; color: white; border: 1px solid white; padding: 12px 25px; margin: 10px; font-size: 1.1rem; width: 220px; cursor: pointer; border-radius: 4px; }
         .btn-back { position: absolute; top: 20px; left: 20px; width: auto; padding: 8px 15px; font-size: 0.9rem; border: 1px solid white; background: #333; z-index: 100; }
         input { background: #000; color: white; border: 1px solid white; padding: 10px; font-size: 1.2rem; width: 220px; text-align: center; margin-bottom: 15px; -webkit-user-select: auto; user-select: auto; }
 
-        #turn-indicator { width: 100%; padding: 10px; font-weight: bold; text-align: center; position: fixed; top: 0; left: 0; z-index: 10; display: none; font-size: 0.9rem; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        /* 修正箇所：ターン表示を中央揃えに固定 */
+        #turn-indicator { 
+            width: 100%; 
+            padding: 10px; 
+            font-weight: bold; 
+            text-align: center; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            z-index: 10; 
+            display: none; 
+            font-size: 0.9rem; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5); 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .my-turn { background: var(--my-turn-bg); }
+        .others-turn { background: var(--others-turn-bg); }
+
         #game-info { font-size: 0.8rem; color: #ccc; position: fixed; top: 40px; width: 100%; text-align: center; display: none; text-shadow: 1px 1px 2px black; }
 
-        /* ゲームエリア */
         #game-area { width: 100%; height: 100%; display: none; text-align: center; padding-top: 70px; }
         
-        /* フェルト生地風の捨て場 */
         #piles-display { 
             display: none; 
             background: var(--felt-green); 
             padding: 20px; 
             border-radius: 15px; 
-            border: 5px solid #4a3000; /* 木製の枠風 */
+            border: 5px solid #4a3000; 
             box-shadow: inset 0 0 50px rgba(0,0,0,0.5), 0 5px 15px rgba(0,0,0,0.8);
             margin: 10px auto;
             width: fit-content;
@@ -55,7 +88,6 @@
 
         .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; justify-content: center; }
         
-        /* 捨て場の枠と矢印 */
         .pile-wrapper { display: flex; align-items: center; gap: 5px; }
         .arrow { font-size: 1.2rem; font-weight: bold; color: rgba(255,255,255,0.5); }
 
@@ -67,7 +99,6 @@
         .pile.desc { border-color: #ff3c00; }
         .pile-value { font-size: 2rem; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 
-        /* ぼやぁと光るエフェクト */
         @keyframes soft-glow { 0% { box-shadow: 0 0 0px #fff; } 50% { box-shadow: 0 0 30px #fff; background: rgba(255,255,255,0.2); } 100% { box-shadow: 0 0 0px #fff; } }
         .placed-effect { animation: soft-glow 0.8s ease-out; }
 
@@ -78,7 +109,6 @@
 
         #finish-btn.glow { animation: soft-glow 2s infinite; border-color: #fff; }
 
-        /* 相談フェーズ */
         #consult-box { background: rgba(0,0,0,0.6); padding: 15px; border-radius: 12px; margin: 0 auto 10px; width: 90%; max-width: 400px; border: 1px solid #444; }
         #consult-list { text-align: center; margin: 10px 0; font-size: 1.2rem; line-height: 1.8; }
 
@@ -88,7 +118,9 @@
 </head>
 <body oncontextmenu="return false;">
 
-<div id="splash"><h1>ザ・ゲーム<br>ONLINE</h1></div>
+<div id="splash">
+    <h1>THE GAME<br>ONLINE</h1>
+</div>
 
 <div id="name-screen" class="screen">
     <p>名前を入力してください</p>
@@ -152,7 +184,7 @@
     let myRoom = null, isHost = false, myTurn = false, turnOrder = [], currentIdx = -1, consultNames = [];
     let state = { deckCount: 0, hand: [], piles: {a1:1, a2:1, d1:100, d2:100}, played: 0, maxHand: 8, draggedValue: null };
 
-    window.onload = () => { setTimeout(() => { document.getElementById('splash').style.display = 'none'; if(!myName) showScreen('name-screen'); else showMenu(); }, 1000); };
+    window.onload = () => { setTimeout(() => { document.getElementById('splash').style.opacity = '0'; setTimeout(() => { document.getElementById('splash').style.display = 'none'; if(!myName) showScreen('name-screen'); else showMenu(); }, 1000); }, 1000); };
     
     function showScreen(id) { 
         document.querySelectorAll('.screen, #game-area').forEach(s => s.style.display = 'none'); 
@@ -175,7 +207,6 @@
         if(myRoom) {
             isHost = false;
             socket.emit('join_room', {room_id: myRoom, name: myName}); 
-            // 参加ボタンを押した後に待機画面へ遷移させる
             document.getElementById('room-id-val').innerText = "部屋: " + myRoom;
             showScreen('wait-screen');
         }
@@ -202,7 +233,6 @@
         state.maxHand = data.num_players==2?7:(data.num_players>=3?6:8);
         consultNames = data.player_list;
         
-        // 相談フェーズでは捨て場を隠す
         document.getElementById('piles-display').style.display = 'none';
         document.getElementById('consult-box').style.display = 'block';
         document.getElementById('consult-list').innerHTML = consultNames.map((n,i)=>`${i+1}. ${n}`).join('<br>');
@@ -221,7 +251,6 @@
     socket.on('start_game_with_order', data => {
         turnOrder = data.order; currentIdx = 0;
         document.getElementById('consult-box').style.display = 'none';
-        // ゲーム開始で捨て場を表示
         document.getElementById('piles-display').style.display = 'block';
         document.getElementById('finish-btn').style.display = 'block';
         document.getElementById('turn-indicator').style.display = 'block';
@@ -233,7 +262,6 @@
         const cur = turnOrder[currentIdx];
         const next = turnOrder[(currentIdx + 1) % turnOrder.length];
         myTurn = (cur === myName);
-        // 現在のターンと次のプレイヤーを表示
         document.getElementById('turn-indicator').innerText = myTurn ? `あなたのターン (次は ${next})` : `${cur}のターン (次は ${next})`;
         document.getElementById('turn-indicator').className = myTurn ? 'my-turn' : 'others-turn';
     }
@@ -259,7 +287,6 @@
     socket.on('update_board', data => {
         state.piles[data.pileId] = data.val;
         const p = document.getElementById(data.pileId);
-        // ぼやぁと光るエフェクトに変更
         p.classList.add('placed-effect'); setTimeout(() => p.classList.remove('placed-effect'), 800);
         render();
     });
