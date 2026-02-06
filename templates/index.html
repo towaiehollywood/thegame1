@@ -74,7 +74,7 @@
     <script>
         const socket = io();
         let myRoom = null;
-        let isHost = false;
+        let isHost = false; // ここでホストかどうかを管理
         let state = { deck: [], hand: [], piles: {a1:1, a2:1, d1:100, d2:100}, played: 0, maxHand: 8, draggedValue: null };
 
         function backToMenu() {
@@ -84,10 +84,12 @@
             isHost = false;
             document.getElementById('room-input').value = "";
             document.getElementById('join-confirm-btn').disabled = false;
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('wait-msg').style.display = 'block';
         }
 
         function createRoom() {
-            isHost = true;
+            isHost = true; // 部屋を作った人はホスト
             socket.emit('create_room');
         }
         
@@ -99,22 +101,21 @@
         function joinRoom() {
             const id = document.getElementById('room-input').value;
             if(!id) { alert("番号を入力してください"); return; }
-            
-            // ボタンを無効化して連打を防ぐ
             document.getElementById('join-confirm-btn').disabled = true;
-            
             myRoom = id;
-            // サーバーに送る
+            isHost = false; // 部屋に入る人はホストではない
             socket.emit('join_room', { room_id: id });
-            // 即座に画面を切り替える
             showWaitScreen(id, "通信中..."); 
         }
 
         socket.on('room_created', (data) => {
             myRoom = data.room_id;
             showWaitScreen(data.room_id, data.player_count);
-            document.getElementById('start-btn').style.display = 'block';
-            document.getElementById('wait-msg').style.display = 'none';
+            // ホストの場合のみ開戦ボタンを表示
+            if (isHost) {
+                document.getElementById('start-btn').style.display = 'block';
+                document.getElementById('wait-msg').style.display = 'none';
+            }
         });
 
         socket.on('player_joined', (data) => {
@@ -126,6 +127,12 @@
             document.getElementById('wait-screen').classList.add('active');
             document.getElementById('display-room-id').innerText = id;
             document.getElementById('player-count').innerText = count;
+            
+            // 入室側（ホストでない）の場合はボタンを隠し、メッセージを出す
+            if (!isHost) {
+                document.getElementById('start-btn').style.display = 'none';
+                document.getElementById('wait-msg').style.display = 'block';
+            }
         }
 
         socket.on('game_started', (data) => {
@@ -137,7 +144,11 @@
             initLocalGame();
         });
 
-        function sendStart() { socket.emit('start_game', { room_id: myRoom }); }
+        function sendStart() { 
+            if (isHost) {
+                socket.emit('start_game', { room_id: myRoom }); 
+            }
+        }
 
         function initLocalGame() {
             state.deck = Array.from({length: 98}, (_, i) => i + 2);
