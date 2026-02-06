@@ -8,16 +8,14 @@
     <style>
         :root { --bg: #1a1a1a; --accent: #ffffff; --my-turn-bg: #2e7d32; --others-turn-bg: #c62828; }
         * { -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box; font-family: sans-serif; }
-        body { background: var(--bg); color: white; margin: 0; padding: 10px; min-height: 100vh; overflow-x: hidden; }
+        body { background: var(--bg); color: white; margin: 0; padding: 10px; min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; align-items: center; }
 
-        /* スプラッシュ画面 */
         #splash { position: fixed; inset: 0; background: black; display: flex; justify-content: center; align-items: center; z-index: 2000; transition: opacity 1s; }
         #splash h1 { font-size: 2rem; text-align: center; margin: 0; }
 
         .screen { display: none; width: 100%; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; position: relative; }
         .screen.active { display: flex; }
 
-        /* 左上の名前と戻るボタン */
         #user-info { position: absolute; top: 20px; left: 20px; font-size: 0.9rem; border-bottom: 1px solid #666; cursor: pointer; padding: 5px; }
         .btn-back { position: absolute; top: 20px; left: 20px; width: auto; padding: 8px 15px; font-size: 0.9rem; border: 1px solid white; background: #333; color: white; border-radius: 4px; z-index: 100; }
 
@@ -26,15 +24,15 @@
         .btn:disabled { opacity: 0.3; }
 
         input { background: #000; color: white; border: 1px solid white; padding: 10px; font-size: 1.2rem; width: 220px; text-align: center; margin-bottom: 15px; }
+        /* プレースホルダーの色 */
+        input::placeholder { color: #555; font-size: 0.9rem; }
 
-        /* ターン表示 */
         #turn-indicator { width: 100%; padding: 12px; font-weight: bold; text-align: center; position: fixed; top: 0; left: 0; z-index: 10; display: none; }
         .my-turn { background: var(--my-turn-bg); }
         .others-turn { background: var(--others-turn-bg); }
 
-        /* ゲームエリア */
-        #game-area { width: 100%; max-width: 500px; display: none; text-align: center; padding-top: 60px; }
-        .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; justify-content: center; margin: 20px auto; width: fit-content; }
+        #piles-area { display: none; margin-top: 20px; }
+        .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; justify-content: center; margin: 10px auto; width: fit-content; }
         .pile { 
             height: 110px; width: 95px; border: 2px solid #444; border-radius: 8px; 
             display: flex; justify-content: center; align-items: center; background: #222; position: relative;
@@ -43,16 +41,14 @@
         .pile.desc { border-color: #ff3c00; }
         .pile-value { font-size: 2.2rem; font-weight: bold; }
 
-        /* 手札：場所を維持 */
         .hand-container { margin-top: 20px; border-top: 1px solid #444; padding-top: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; }
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 320px; min-height: 85px; }
         .card { width: 52px; height: 80px; background: #fff; color: #000; border-radius: 4px; font-size: 1.4rem; font-weight: bold; display: flex; justify-content: center; align-items: center; }
         .card-placeholder { width: 52px; height: 80px; }
 
-        /* ホスト設定エリア */
-        #setup-box { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 20px; width: 90%; }
+        #consult-box { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-top: 20px; width: 90%; max-width: 400px; border: 1px solid #444; }
+        #consult-list { text-align: left; margin: 15px 0; font-size: 1.1rem; line-height: 1.8; }
 
-        /* 合図もやもや */
         @keyframes moya { 0%, 100% { box-shadow: 0 0 5px #fff; } 50% { box-shadow: 0 0 25px #fff; } }
         .signal-glow { animation: moya 0.5s infinite; border-color: #fff !important; }
     </style>
@@ -69,7 +65,7 @@
 
 <div id="menu-screen" class="screen">
     <div id="user-info" onclick="changeName()">名前: <span id="display-name"></span></div>
-    <h1>THE GAME</h1>
+    <h1 style="margin-bottom: 30px;">THE GAME</h1>
     <button class="btn" onclick="createRoom()">部屋を作る</button>
     <button class="btn" onclick="showScreen('join-screen')">部屋に入る</button>
 </div>
@@ -84,29 +80,40 @@
 <div id="wait-screen" class="screen">
     <button class="btn-back" onclick="location.reload()">戻る</button>
     <h2>部屋番号: <span id="room-id-val"></span></h2>
-    <div id="player-list" style="margin: 20px 0; font-size: 1.1rem;"></div>
+    <div id="player-list-wait" style="margin: 20px 0; font-size: 1.1rem;"></div>
     <div id="host-area" style="display:none;">
         <button class="btn" style="background:#2e7d32;" onclick="requestCards()">カードを配って相談する</button>
     </div>
     <p id="guest-msg">ホストが開始するのを待っています...</p>
 </div>
 
-<div id="game-area">
+<div id="game-area" style="display:none; width: 100%; text-align: center; padding-top: 60px;">
     <div id="turn-indicator"></div>
-    <div class="piles-container">
-        <div id="a1" class="pile asc" onclick="sendSignal('a1')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a1')"><div class="pile-value">1</div></div>
-        <div id="a2" class="pile asc" onclick="sendSignal('a2')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a2')"><div class="pile-value">1</div></div>
-        <div id="d1" class="pile desc" onclick="sendSignal('d1')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'd1')"><div class="pile-value">100</div></div>
-        <div id="d2" class="pile desc" onclick="sendSignal('d2')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'd2')"><div class="pile-value">100</div></div>
+
+    <div id="piles-area">
+        <div class="piles-container">
+            <div id="a1" class="pile asc" onclick="sendSignal('a1')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a1')"><div class="pile-value">1</div></div>
+            <div id="a2" class="pile asc" onclick="sendSignal('a2')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'a2')"><div class="pile-value">1</div></div>
+            <div id="d1" class="pile desc" onclick="sendSignal('d1')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'd1')"><div class="pile-value">100</div></div>
+            <div id="d2" class="pile desc" onclick="sendSignal('d2')" ondragover="event.preventDefault()" ondrop="handleDrop(event, 'd2')"><div class="pile-value">100</div></div>
+        </div>
     </div>
-    <div class="hand-container">
-        <div id="hand"></div>
-        <div id="setup-box" style="display:none;">
-            <p style="margin:0 0 10px 0; font-size:0.9rem;">相談して最初のプレイヤー名を入力</p>
-            <input type="text" id="first-player-name" placeholder="名前">
+
+    <div id="consult-box" style="display:none; margin: 0 auto 20px;">
+        <h3>相談フェーズ</h3>
+        <p style="font-size: 0.8rem; color: #aaa;">手札を見て、最初の人を相談してください</p>
+        <div id="consult-list"></div>
+        
+        <div id="host-setup" style="display:none;">
+            <input type="number" id="first-player-number" placeholder="プレイヤーの数字を入力">
             <button class="btn" style="width:100%; margin:0;" onclick="confirmStart()">決定</button>
         </div>
-        <button id="finish-btn" class="btn" style="display:none;" onclick="finishTurn()">ターン終了</button>
+    </div>
+
+    <div class="hand-container">
+        <p style="margin:0 0 10px 0; font-size:0.8rem; color:#888;">自分の手札</p>
+        <div id="hand"></div>
+        <button id="finish-btn" class="btn" style="display:none; margin-top: 20px;" onclick="finishTurn()">ターン終了</button>
     </div>
 </div>
 
@@ -115,9 +122,9 @@
     let myName = localStorage.getItem('thegame_name') || "";
     let myRoom = null, isHost = false, myTurn = false;
     let turnOrder = [], currentIdx = -1;
+    let consultNames = []; // 相談中の名前リストを保持
     let state = { deck: [], hand: [], piles: {a1:1, a2:1, d1:100, d2:100}, played: 0, maxHand: 8, draggedValue: null };
 
-    // 起動演出
     window.onload = () => {
         setTimeout(() => {
             const sp = document.getElementById('splash');
@@ -142,12 +149,7 @@
     function showMenu() { document.getElementById('display-name').innerText = myName; showScreen('menu-screen'); }
     function changeName() { showScreen('name-screen'); }
 
-    // 部屋作成
-    function createRoom() {
-        isHost = true;
-        socket.emit('create_room', { name: myName });
-    }
-
+    function createRoom() { isHost = true; socket.emit('create_room', { name: myName }); }
     function joinRoom() {
         const rid = document.getElementById('room-input').value;
         if(rid) { myRoom = rid; isHost = false; socket.emit('join_room', { room_id: rid, name: myName }); }
@@ -156,17 +158,16 @@
     socket.on('room_created', (data) => {
         myRoom = data.room_id;
         document.getElementById('room-id-val').innerText = data.room_id;
-        document.getElementById('player-list').innerText = "プレイヤー: " + data.players.join(', ');
+        document.getElementById('player-list-wait').innerText = "プレイヤー: " + data.players.join(', ');
         document.getElementById('host-area').style.display = 'block';
         document.getElementById('guest-msg').style.display = 'none';
         showScreen('wait-screen');
     });
 
     socket.on('player_joined', (data) => {
-        document.getElementById('player-list').innerText = "プレイヤー: " + data.players.join(', ');
+        document.getElementById('player-list-wait').innerText = "プレイヤー: " + data.players.join(', ');
     });
 
-    // 相談フェーズ
     function requestCards() { socket.emit('request_initial_cards', { room_id: myRoom }); }
 
     socket.on('distribute_initial_cards', (data) => {
@@ -174,21 +175,33 @@
         state.deck = data.deck;
         state.hand = data.hands[myName].sort((a,b)=>a-b);
         state.maxHand = data.num_players === 2 ? 7 : (data.num_players >= 3 ? 6 : 8);
+        
+        document.getElementById('consult-box').style.display = 'block';
+        const listEl = document.getElementById('consult-list');
+        consultNames = Object.keys(data.hands);
+        listEl.innerHTML = consultNames.map((name, i) => `${i + 1}. ${name}`).join('<br>');
+        
+        if (isHost && data.num_players > 1) {
+            document.getElementById('host-setup').style.display = 'block';
+        } else if (data.num_players === 1) {
+            confirmStart(1); // 1人なら自動で自分
+        }
         render();
-        if (isHost && data.num_players > 1) document.getElementById('setup-box').style.display = 'block';
-        else if (data.num_players === 1) confirmStart(myName);
     });
 
-    function confirmStart(fixedName) {
-        const first = fixedName || document.getElementById('first-player-name').value.trim();
-        if(!first) return alert("名前を入れてください");
-        socket.emit('confirm_first_player', { room_id: myRoom, firstPlayer: first });
+    function confirmStart(fixedNum) {
+        let num = fixedNum || parseInt(document.getElementById('first-player-number').value);
+        if(!num || num < 1 || num > consultNames.length) return alert("正しいプレイヤー番号を入力してください");
+        
+        const firstPlayerName = consultNames[num - 1];
+        socket.emit('confirm_first_player', { room_id: myRoom, firstPlayer: firstPlayerName });
     }
 
     socket.on('start_game_with_order', (data) => {
         turnOrder = data.order;
         currentIdx = 0;
-        document.getElementById('setup-box').style.display = 'none';
+        document.getElementById('consult-box').style.display = 'none';
+        document.getElementById('piles-area').style.display = 'block';
         document.getElementById('finish-btn').style.display = 'block';
         document.getElementById('turn-indicator').style.display = 'block';
         updateTurnDisplay();
@@ -204,7 +217,6 @@
         el.className = myTurn ? 'my-turn' : 'others-turn';
     }
 
-    // ドラッグ＆ドロップと合図
     function sendSignal(pid) { socket.emit('send_signal', { room_id: myRoom, pileId: pid }); }
     socket.on('receive_signal', (data) => {
         const p = document.getElementById(data.pileId);
@@ -232,7 +244,10 @@
     socket.on('update_board', (data) => { state.piles[data.pileId] = data.val; render(); });
 
     function render() {
-        for(let k in state.piles) document.querySelector(`#${k} .pile-value`).innerText = state.piles[k];
+        for(let k in state.piles) {
+            const el = document.querySelector(`#${k} .pile-value`);
+            if(el) el.innerText = state.piles[k];
+        }
         const h = document.getElementById('hand');
         h.innerHTML = '';
         state.hand.forEach(v => {
