@@ -55,7 +55,8 @@ def on_request_cards(data):
         emit('distribute_initial_cards', {
             "hands": hands, 
             "deck_count": len(room["deck"]), 
-            "num_players": num_players
+            "num_players": num_players,
+            "player_list": list(room["players"].values())
         }, room=room_id)
 
 @socketio.on('confirm_first_player')
@@ -84,7 +85,6 @@ def on_draw(data):
     if room_id in rooms:
         room = rooms[room_id]
         drawn = [room["deck"].pop() for _ in range(min(count, len(room["deck"])))]
-        # 引いた本人にだけカードを送り、全員に山札の残り数を送る
         emit('receive_drawn_cards', {"cards": drawn, "deck_count": len(room["deck"])})
         emit('update_deck_count', {"deck_count": len(room["deck"])}, room=room_id, include_self=False)
 
