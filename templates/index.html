@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>THE GAME ONLINE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Potta+One&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
         :root { 
@@ -23,28 +24,28 @@
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .screen.active { display: flex; }
 
-        /* スタンプUI：横並びに修正 */
+        /* スタンプUI：Potta Oneを適用 */
         #stamp-btn { position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; background: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-size: 1.5rem; color: #333; }
         #stamp-menu { 
             position: fixed; bottom: 80px; right: 20px; background: rgba(255,255,255,0.95); 
             padding: 8px; border-radius: 12px; display: none; 
-            flex-direction: row; /* 横並び */
-            gap: 8px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+            flex-direction: row; gap: 8px; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
         }
         .stamp-option { 
             padding: 8px 12px; color: #333; font-weight: bold; cursor: pointer; 
             border: 1px solid #ddd; border-radius: 8px; background: #fff;
-            white-space: nowrap; font-family: 'Comic Sans MS', cursive, sans-serif; font-size: 0.85rem;
+            white-space: nowrap; font-family: 'Potta One', cursive; font-size: 0.9rem;
         }
 
-        .bubble { position: fixed; background: #fff; color: #333; padding: 10px 20px; border-radius: 20px; font-weight: bold; z-index: 1600; font-family: 'Comic Sans MS', cursive, sans-serif; box-shadow: 0 4px 10px rgba(0,0,0,0.3); animation: float-up 2s forwards; pointer-events: none; }
+        /* 吹き出し：Potta Oneを適用 */
+        .bubble { position: fixed; background: #fff; color: #333; padding: 12px 24px; border-radius: 20px; font-weight: bold; z-index: 1600; font-family: 'Potta One', cursive; box-shadow: 0 4px 10px rgba(0,0,0,0.3); animation: float-up 2s forwards; pointer-events: none; font-size: 1.1rem; }
         .bubble::after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); border-width: 10px 10px 0; border-style: solid; border-color: #fff transparent transparent; }
         @keyframes float-up { 0% { opacity: 0; transform: translate(-50%, 0); } 10% { opacity: 1; transform: translate(-50%, -20px); } 80% { opacity: 1; transform: translate(-50%, -40px); } 100% { opacity: 0; transform: translate(-50%, -60px); } }
 
         #result-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 3000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        #result-screen h2 { font-size: 3.5rem; margin-bottom: 20px; text-shadow: 0 0 20px currentColor; }
+        #result-screen h2 { font-size: 3.5rem; margin-bottom: 20px; text-shadow: 0 0 20px currentColor; font-family: 'Potta One', cursive; }
         .perfect { color: #00ff00; } .win { color: #f1c40f; } .lose { color: #e74c3c; }
-        #clear-notice { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #f1c40f; text-shadow: 0 0 20px #000; z-index: 2500; pointer-events: none; opacity: 0; transition: opacity 0.5s; }
+        #clear-notice { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: bold; color: #f1c40f; text-shadow: 0 0 20px #000; z-index: 2500; pointer-events: none; opacity: 0; transition: opacity 0.5s; font-family: 'Potta One', cursive; }
 
         #user-info-area { position: absolute; top: 20px; left: 20px; font-size: 0.9rem; border-bottom: 1px solid #666; cursor: pointer; padding: 5px; z-index: 100; }
         .btn { background: #333; color: white; border: 1px solid white; padding: 12px 25px; margin: 10px; font-size: 1.1rem; width: 220px; cursor: pointer; border-radius: 4px; }
@@ -75,8 +76,7 @@
         .card { 
             width: 46px; height: 68px; background: #fff; color: #000; border-radius: 4px; 
             font-size: 1.2rem; font-weight: bold; display: flex; justify-content: center; align-items: center; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5); transition: transform 0.1s;
-            touch-action: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5); transition: transform 0.1s; touch-action: none;
         }
         .card-placeholder { width: 46px; height: 68px; }
         .dragging-active { position: fixed; pointer-events: none; z-index: 10000; transform: scale(1.1); opacity: 0.9; }
@@ -165,8 +165,6 @@
     let myRoom = null, isHost = false, myTurn = false, turnOrder = [], currentIdx = -1, consultNames = [], isStarted = false;
     let state = { deckCount: 0, hand: [], piles: {a1:1, a2:1, d1:100, d2:100}, played: 0, playerHands: {} };
     let clearNotified = false;
-
-    // ドラッグ管理
     let draggingData = { cardValue: null, el: null, clone: null };
 
     const waitStamps = ["よろしく！", "早く始めて！", "ばーか", "頑張ろう！"];
@@ -203,7 +201,6 @@
         render();
     });
 
-    // スタンプ横並びメニュー
     function updateStampMenu(started) {
         const menu = document.getElementById('stamp-menu');
         const stamps = started ? gameStamps : waitStamps;
@@ -263,7 +260,6 @@
         p.classList.add('signal-glow'); setTimeout(() => p.classList.remove('signal-glow'), 1500);
     });
 
-    // --- PC/スマホ両対応のドラッグ制御 ---
     function initDragEvents(cardEl, value) {
         const startDrag = (x, y) => {
             if (!myTurn) return;
@@ -293,7 +289,6 @@
             cardEl.style.opacity = '1';
         };
 
-        // マウスイベント (PC)
         cardEl.onmousedown = (e) => {
             startDrag(e.clientX, e.clientY);
             window.onmousemove = (me) => updateClonePos(me.clientX, me.clientY);
@@ -303,7 +298,6 @@
             };
         };
 
-        // タッチイベント (スマホ)
         cardEl.ontouchstart = (e) => {
             const t = e.touches[0];
             startDrag(t.clientX, t.clientY);
