@@ -3,107 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>THE GAME - 卍解 ONLINE</title>
+    <title>THE GAME - Online</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
+        /* UIデザインは維持します */
         @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700&display=swap');
-
-        :root { 
-            --bg-color: #000000; 
-            --accent-color: #ffffff; 
-            --sub-color: #333333;
-            --asc-glow: rgba(0, 140, 255, 0.4);
-            --desc-glow: rgba(255, 60, 0, 0.4);
-        }
-
-        * {
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-            font-family: 'Shippori Mincho B1', serif;
-        }
-
-        body { 
-            background: var(--bg-color); 
-            background-image: radial-gradient(circle at center, #111 0%, #000 100%);
-            color: var(--accent-color); 
-            margin: 0; 
-            padding: 10px; 
-            overscroll-behavior: none;
-        }
-
-        h1 { 
-            font-size: 1.8rem; 
-            letter-spacing: 0.5rem; 
-            border-bottom: 1px solid var(--accent-color);
-            display: inline-block;
-            margin: 15px 0;
-            padding-bottom: 5px;
-        }
-
+        :root { --bg-color: #000000; --accent-color: #ffffff; --asc-glow: rgba(0, 140, 255, 0.4); --desc-glow: rgba(255, 60, 0, 0.4); }
+        * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; font-family: 'Shippori Mincho B1', serif; }
+        body { background: var(--bg-color); background-image: radial-gradient(circle at center, #111 0%, #000 100%); color: var(--accent-color); margin: 0; padding: 10px; overscroll-behavior: none; }
+        h1 { font-size: 1.8rem; letter-spacing: 0.5rem; border-bottom: 1px solid var(--accent-color); display: inline-block; margin: 15px 0; padding-bottom: 5px; }
         .screen { display: none; height: 100vh; flex-direction: column; justify-content: center; align-items: center; position: relative; }
         .screen.active { display: flex; }
-        
-        .btn { 
-            background: transparent; color: white; border: 1px solid white; 
-            padding: 12px 25px; margin: 10px; font-size: 1.1rem; 
-            width: 220px; cursor: pointer; transition: 0.3s;
-            text-transform: uppercase;
-        }
+        .btn { background: transparent; color: white; border: 1px solid white; padding: 12px 25px; margin: 10px; font-size: 1.1rem; width: 220px; cursor: pointer; transition: 0.3s; text-transform: uppercase; }
         .btn:active { background: white; color: black; }
         .btn-start { border: 2px solid #fff; background: rgba(255,255,255,0.1); display: none; }
-        
-        /* 戻るボタン（左上に配置） */
-        .btn-back {
-            position: absolute; 
-            top: 25px; 
-            left: 20px;
-            width: auto; 
-            padding: 5px 15px; 
-            font-size: 0.85rem;
-            border: 1px solid #666; 
-            color: #aaa;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
-        }
-        .btn-back:active { border-color: #fff; color: #fff; background: rgba(255, 255, 255, 0.2); }
-
-        input { 
-            background: #111; color: white; border: 1px solid white;
-            padding: 10px; font-size: 1.5rem; width: 150px; text-align: center; 
-            margin-bottom: 20px; border-radius: 0;
-        }
-
-        /* 盤面 */
+        .btn-back { position: absolute; top: 25px; left: 20px; width: auto; padding: 5px 15px; font-size: 0.85rem; border: 1px solid #666; color: #aaa; background: rgba(255, 255, 255, 0.05); border-radius: 4px; }
+        input { background: #111; color: white; border: 1px solid white; padding: 10px; font-size: 1.5rem; width: 150px; text-align: center; margin-bottom: 20px; }
         .piles-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; max-width: 400px; margin: 10px auto; }
-        .pile { 
-            height: 120px; border: 1px solid #444; border-radius: 4px; 
-            display: flex; flex-direction: column; justify-content: center; 
-            align-items: center; background: rgba(255,255,255,0.02);
-            transition: 0.3s;
-        }
+        .pile { height: 120px; border: 1px solid #444; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(255,255,255,0.02); transition: 0.3s; }
         .pile span { font-size: 0.7rem; color: #888; margin-bottom: 5px; }
         .pile.asc { box-shadow: inset 0 0 15px var(--asc-glow); border-color: #008cff; }
         .pile.desc { box-shadow: inset 0 0 15px var(--desc-glow); border-color: #ff3c00; }
         .pile.drag-over { background: rgba(255,255,255,0.1); transform: scale(1.02); }
         .pile-value { font-size: 2.2rem; text-shadow: 0 0 10px white; }
-
-        /* 手札 */
         .hand-container { margin-top: 20px; border-top: 1px solid #222; padding-top: 20px; }
         #hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-        
-        .card { 
-            width: 55px; height: 85px; line-height: 85px; 
-            background: #fff; color: #000; 
-            border-radius: 2px; font-size: 1.5rem; font-weight: bold; 
-            box-shadow: 0 0 15px rgba(255,255,255,0.2);
-            touch-action: none; cursor: grab;
-        }
+        .card { width: 55px; height: 85px; line-height: 85px; background: #fff; color: #000; border-radius: 2px; font-size: 1.5rem; font-weight: bold; box-shadow: 0 0 15px rgba(255,255,255,0.2); touch-action: none; cursor: grab; }
         .card.dragging { opacity: 0.1; transform: scale(1.1); }
-        
         #finish-btn.active { background: white; color: black; box-shadow: 0 0 20px white; }
-        
         #info { font-size: 0.8rem; color: #666; margin-bottom: 10px; letter-spacing: 0.1rem; }
     </style>
 </head>
@@ -132,14 +59,12 @@
 
     <div id="game-area" style="display:none;">
         <div id="info">Room: <span id="room-id-tag"></span> | Deck: <span id="deck-count">0</span></div>
-        
         <div class="piles-container">
             <div id="a1" class="pile asc" ondragover="event.preventDefault()" ondragenter="this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'a1')"><span>昇順 ↑</span><div class="pile-value">1</div></div>
             <div id="a2" class="pile asc" ondragover="event.preventDefault()" ondragenter="this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'a2')"><span>昇順 ↑</span><div class="pile-value">1</div></div>
             <div id="d1" class="pile desc" ondragover="event.preventDefault()" ondragenter="this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'd1')"><span>降順 ↓</span><div class="pile-value">100</div></div>
             <div id="d2" class="pile desc" ondragover="event.preventDefault()" ondragenter="this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'd2')"><span>降順 ↓</span><div class="pile-value">100</div></div>
         </div>
-
         <div class="hand-container">
             <div id="hand"></div>
             <button id="finish-btn" class="btn" onclick="finishTurn()">ターン終了</button>
@@ -157,6 +82,8 @@
             document.getElementById('menu-screen').classList.add('active');
             myRoom = null;
             isHost = false;
+            // 入力欄もリセット
+            document.getElementById('room-input').value = "";
         }
 
         function createRoom() { isHost = true; socket.emit('create_room'); }
@@ -168,7 +95,11 @@
 
         function joinRoom() {
             const id = document.getElementById('room-input').value;
+            if(!id) { alert("番号を入力してください"); return; }
+            myRoom = id; // 先にmyRoomに入れておく
             socket.emit('join_room', { room_id: id });
+            // 送信と同時に待機画面に切り替える
+            showWaitScreen(id, "..."); 
         }
 
         socket.on('room_created', (data) => {
@@ -215,7 +146,6 @@
             document.getElementById(pileId).classList.remove('drag-over');
             const card = state.draggedValue;
             if (card === null) return;
-
             const top = state.piles[pileId];
             const isAsc = pileId.startsWith('a');
             if((isAsc && (card > top || card == top-10)) || (!isAsc && (card < top || card == top+10))) {
@@ -241,11 +171,7 @@
             state.hand.forEach(v => {
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'card'; cardDiv.innerText = v; cardDiv.draggable = true;
-                cardDiv.ondragstart = (e) => { 
-                    state.draggedValue = v; 
-                    e.target.classList.add('dragging');
-                    e.dataTransfer.setData("text", v); 
-                };
+                cardDiv.ondragstart = (e) => { state.draggedValue = v; e.target.classList.add('dragging'); e.dataTransfer.setData("text", v); };
                 cardDiv.ondragend = (e) => e.target.classList.remove('dragging');
                 handEl.appendChild(cardDiv);
             });
@@ -261,7 +187,10 @@
             state.played = 0;
             render();
         }
-        socket.on('error', (data) => alert(data.message));
+        socket.on('error', (data) => {
+            alert(data.message);
+            backToMenu(); // エラー時はメニューに戻す
+        });
     </script>
 </body>
 </html>
