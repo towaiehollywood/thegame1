@@ -24,7 +24,7 @@ def on_create(data):
         "started": False,
         "order": [],
         "current_idx": 0,
-        "deck": list(range(2, 100)), # 山札をここで一括管理
+        "deck": list(range(2, 100)),
         "piles": {"a1": 1, "a2": 1, "d1": 100, "d2": 100}
     }
     random.shuffle(rooms[room_id]["deck"])
@@ -75,7 +75,7 @@ def on_confirm(data):
 def on_sync(data):
     room_id = data.get('room_id')
     rooms[room_id]["piles"][data['pileId']] = data['val']
-    emit('update_board', data, room=room_id, include_self=True) # 自分も含めて全員に通知
+    emit('update_board', data, room=room_id)
 
 @socketio.on('draw_cards')
 def on_draw(data):
@@ -84,15 +84,17 @@ def on_draw(data):
     if room_id in rooms:
         room = rooms[room_id]
         drawn = [room["deck"].pop() for _ in range(min(count, len(room["deck"])))]
-        emit('receive_drawn_cards', {"cards": drawn, "deck_count": len(room["deck"])}, room=room_id)
+        # 引いた本人にだけカードを送り、全員に山札の残り数を送る
+        emit('receive_drawn_cards', {"cards": drawn, "deck_count": len(room["deck"])})
+        emit('update_deck_count', {"deck_count": len(room["deck"])}, room=room_id, include_self=False)
 
 @socketio.on('next_turn')
 def on_next(data):
-    emit('update_turn', {"nextIdx": data['nextIdx']}, room=data['room_id'], include_self=True)
+    emit('update_turn', {"nextIdx": data['nextIdx']}, room=data['room_id'])
 
 @socketio.on('send_signal')
 def on_signal(data):
-    emit('receive_signal', data, room=data['room_id'], include_self=True) # 自分も光るように修正
+    emit('receive_signal', data, room=data['room_id'])
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
